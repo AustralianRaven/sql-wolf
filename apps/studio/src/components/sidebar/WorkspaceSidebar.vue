@@ -37,7 +37,7 @@
     >
       <span class="avatar"><i class="material-icons">refresh</i></span>
     </a>
-    <account-status-button />
+    <settings-button />
   </div>
 </template>
 
@@ -46,7 +46,7 @@ import { IWorkspace } from '@/common/interfaces/IWorkspace'
 import ContentPlaceholder from '@/components/common/loading/ContentPlaceholder.vue'
 import ContentPlaceholderImg from '@/components/common/loading/ContentPlaceholderImg.vue'
 import WorkspaceAvatar from '@/components/common/WorkspaceAvatar.vue'
-import AccountStatusButton from '@/components/sidebar/connection/AccountStatusButton.vue'
+import SettingsButton from '@/components/sidebar/connection/SettingsButton.vue'
 import { CloudClient } from '@/lib/cloud/CloudClient'
 import { WSWithClient } from '@/store/modules/CredentialsModule'
 import Vue from 'vue'
@@ -55,7 +55,7 @@ import NewWorkspaceButton from './connection/NewWorkspaceButton.vue'
 import { AppEvent } from '@/common/AppEvent'
 
 export default Vue.extend({
-components: { NewWorkspaceButton, WorkspaceAvatar, AccountStatusButton, ContentPlaceholderImg, ContentPlaceholder },
+components: { NewWorkspaceButton, WorkspaceAvatar, SettingsButton, ContentPlaceholderImg, ContentPlaceholder },
   props: ['activeItem'],
   computed: {
     ...mapState('credentials', ['credentials', 'loading']),

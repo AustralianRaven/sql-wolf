@@ -40,6 +40,7 @@ import { PopupMenuModule } from './modules/PopupMenuModule'
 import { WebPluginManagerStatus } from '@/services/plugin'
 import { MenuBarModule } from './modules/MenuBarModule'
 import { PluginsModule } from './modules/plugins'
+import { AzureVaultModule } from './modules/AzureVaultModule'
 
 
 const log = RawLog.scope('store/index')
@@ -107,6 +108,7 @@ const store = new Vuex.Store<State>({
     popupMenu: PopupMenuModule,
     menuBar: MenuBarModule,
     plugins: PluginsModule,
+    azureVault: AzureVaultModule,
   },
   state: {
     connection: new ElectronUtilityConnectionClient(),
@@ -664,6 +666,7 @@ const store = new Vuex.Store<State>({
       await context.dispatch('licenses/init')
       await context.dispatch('userEnums/init')
       await context.dispatch('updateWindowTitle')
+      await context.dispatch('azureVault/load')
       setInterval(
         () => context.dispatch('licenses/sync'),
         globals.licenseCheckInterval

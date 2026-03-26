@@ -298,6 +298,9 @@ export class SavedConnection extends DbConnectionBase implements IConnection {
   @JoinColumn({ name: 'connectionFolderId' })
   connectionFolder?: ConnectionFolder
 
+  @Column({ type: 'varchar', nullable: true })
+  vaultSecretName: Nullable<string> = null
+
   @Column({type: 'varchar', nullable: true, transformer: [encrypt]})
   password: Nullable<string> = null
 
