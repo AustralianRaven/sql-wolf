@@ -20,8 +20,8 @@ const bksErDiagramPath = path.dirname(require.resolve('@beekeeperstudio/bks-er-d
 
 
 module.exports = {
-  appId: "io.beekeeperstudio.desktop",
-  productName: "Beekeeper Studio",
+  appId: "io.sqlwolf.desktop",
+  productName: "SqlWolf",
   releaseInfo: {
     releaseNotesFile: "build/release-notes.md"
   },
@@ -238,8 +238,8 @@ module.exports = {
     include: './build/win/msvc-redist.nsh'
   },
   appx: {
-    applicationId: "beekeeperstudio",
+    applicationId: "sqlwolf",
     publisher: certSubject.replaceAll('"', "&quot;"),
-    publisherDisplayName: "Beekeeper Studio"
+    publisherDisplayName: "SqlWolf"
   }
 }

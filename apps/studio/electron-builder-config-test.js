@@ -4,8 +4,8 @@ const fpmOptions = [
 ]
 
 module.exports = {
-  appId: "io.beekeeperstudio.desktop",
-  productName: "Beekeeper Studio",
+  appId: "io.sqlwolf.desktop",
+  productName: "SqlWolf",
   releaseInfo: {
     releaseNotesFile: "build/release-notes.md"
   },
