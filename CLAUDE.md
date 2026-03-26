@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Beekeeper Studio is a cross-platform SQL editor and database manager built with Electron, Vue.js 2, and TypeScript. It supports 15+ databases and offers both community (GPLv3) and paid editions.
+SqlWolf is a cross-platform SQL editor and database manager built with Electron, Vue.js 2, and TypeScript. It is a fork of Beekeeper Studio, supports 15+ databases, and offers both community (GPLv3) and paid editions.
 
 ## Architecture
 

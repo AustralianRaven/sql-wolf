@@ -2,9 +2,9 @@
   "name": "beekeeper-studio",
   "version": "5.7.0-beta.1",
   "private": true,
-  "description": "An easy-to use SQL query editor and database UI for Mac, Windows, and Linux",
+  "description": "SqlWolf - SQL query editor and database UI for Mac, Windows, and Linux",
   "author": {
-    "name": "Beekeeper Studio Team",
+    "name": "SqlWolf",
     "email": "matthew@rathbonelabs.com",
     "url": "https://beekeeperstudio.io"
   },

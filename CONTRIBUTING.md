@@ -1,44 +1,53 @@
-## Contributing Guidelines
+# Contributing to SqlWolf
 
-Last updated: Feb 27 2022
+## Prerequisites
 
-We welcome community contributions! If you're thinking of contributing, thank you!
+### 1. Install Node.js and Yarn
 
-We ask that all contributors abide by our [code of conduct](https://github.com/beekeeper-studio/beekeeper-studio/blob/master/code_of_conduct.md)
+You will need Node.js 20 and Yarn.
 
+```powershell
+npm install -g yarn
+```
 
-### Opening Issues
+### 2. Install Visual Studio Build Tools 2022 (C++ compiler)
 
-We have templates for questions, features, or bug reports, please follow the directions in these templates, but generally:
+The project has native modules that require compilation. Install VS 2022 Build Tools via winget:
 
-- Please give as much detail as possible about the feature or issue.
-- Include OS, database type, database version, and app version
-- Include steps to replicate (eg the SQL to run)
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools
+```
 
-### Pull Requests
+Then add the C++ workload (required — without this, `yarn install` will fail):
 
-It's usually best to open an issue before spending a lot of time working on the code, just in case someone else is working on the same problem. We're always happy to discuss how to implement or design things to help you before you begin work.
+```powershell
+Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" -ArgumentList "modify --installPath ""C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools"" --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive" -Verb RunAs -Wait
+```
 
-Sometimes we don't merge pull requests if they don't meet our design goals, but we really never want this to happen, so please talk to us!
+> **Note:** If you have VS 2025 Build Tools (`\18\BuildTools`) already installed, node-gyp won't recognise it — you still need the 2022 Build Tools alongside it.
 
-### Legal
+## Install Dependencies
 
-All contributions to this repository are made under the [MIT License](https://opensource.org/licenses/MIT).
+From the repo root:
 
-#### What this means practically
+```powershell
+yarn install
+```
 
-If you make a PR, the PR code is licensed as MIT. As soon as I copy (merge) the code into this repository it is then made available under the GPLv3 as part of Beekeeper Studio. The code is still copyright to you, and your original MIT license still applies to the code in your PR. The MIT license requires that I maintain the copyright notice, which is made available below.
+## Running the App
 
-#### Why do it this way
+`yarn bks:dev` from the root may not launch the Electron window reliably on Windows. Instead, run from `apps/studio`:
 
-Practically speaking, we need to have the ability to change the Beekeeper Studio license in the future if we need to, by providing your contributions under the MIT license, we can do so without requiring that all contributors sign a [CLA](https://en.wikipedia.org/wiki/Contributor_License_Agreement) or hand over their copyright to us. This is a pretty common way to manage contributions for a large-ish open source project, so it should be totally fine for 99% of contributors.
+```powershell
+cd apps/studio
+node ./esbuild.mjs watch
+```
 
-#### MIT License for Contributions
+For hot reload on the frontend, open a second terminal and run:
 
-Copyright 2022 Code Contributor (whoever you are)
+```powershell
+cd apps/studio
+yarn dev:vite
+```
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+> SqlWolf is an **Electron desktop app** — it opens as a desktop window, not in a browser.
