@@ -3,8 +3,7 @@
     "allow": [
       "Bash(grep -r \"$util\" /c/github/beekeeper-studio/apps/studio/src --include=\"*.ts\" -l)",
       "Bash(yarn build:esbuild)",
-      "Bash(yarn build:vite)",
-      "Bash(xargs sed:*)"
+      "Bash(yarn build:vite)"
     ]
   }
 }
