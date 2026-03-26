@@ -1,6 +1,7 @@
 <template>
   <div class="host-port-user-password">
     <slot name="header" />
+    <vault-loader v-if="vaultEnabled" :config="config" />
     <div class="row">
       <div
         class="form-group col"
@@ -119,7 +120,8 @@
 import { findClient } from '@/lib/db/clients'
 import MaskedInput from '@/components/MaskedInput.vue'
 import CommonSsl from './CommonSsl.vue'
-import { mapState } from 'vuex'
+import VaultLoader from './VaultLoader.vue'
+import { mapState, mapGetters } from 'vuex'
 
 export default {
   props: {
@@ -136,7 +138,8 @@ export default {
   },
   components: {
     MaskedInput,
-    CommonSsl
+    CommonSsl,
+    VaultLoader,
   },
   data() {
     return {
@@ -145,6 +148,7 @@ export default {
   },
   computed: {
     ...mapState('settings', ['privacyMode']),
+    ...mapGetters('azureVault', { vaultEnabled: 'enabled' }),
     togglePasswordIcon() {
       return this.showPassword ? "visibility_off" : "visibility"
     },
