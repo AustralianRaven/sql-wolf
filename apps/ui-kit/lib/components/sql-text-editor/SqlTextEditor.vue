@@ -42,9 +42,13 @@ export default Vue.extend({
       if (!this.textEditor) return;
       this.applyCompletionSource();
     },
-    formatterConfig() {
-      this.formatSql()
-    }
+    upperCaseKeywords() {
+      this.initialize();
+    },
+    autoQuoteIdentifiers() {
+      if (!this.textEditor) return;
+      this.applyCompletionSource();
+    },
   },
 
   methods: {
@@ -52,6 +56,7 @@ export default Vue.extend({
       return new SqlTextEditor({
         identiferDialect: this.identifierDialect,
         paramTypes: this.paramTypes,
+        upperCaseKeywords: this.upperCaseKeywords,
         onQuerySelectionChange: (params) => {
           this.selectedQuery = params.selectedQuery.text;
           this.$emit("bks-query-selection-change", params)
@@ -68,6 +73,7 @@ export default Vue.extend({
       this.textEditor.setCompletionSource({
         defaultSchema: this.defaultSchema,
         entities: this.entities,
+        autoQuoteIdentifiers: this.autoQuoteIdentifiers,
       });
     },
     contextMenuItemsModifier(

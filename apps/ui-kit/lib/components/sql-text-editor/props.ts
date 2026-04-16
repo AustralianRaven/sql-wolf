@@ -59,6 +59,14 @@ export default {
   formatterModalId: {
     type: String,
     default: ''
+  },
+  upperCaseKeywords: {
+    type: Boolean,
+    default: true
+  },
+  autoQuoteIdentifiers: {
+    type: Boolean,
+    default: false
   }
 
   // --- replaced with languageId

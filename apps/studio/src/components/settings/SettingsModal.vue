@@ -15,8 +15,22 @@
               <i class="material-icons">clear</i>
             </a>
           </div>
+
+          <div class="settings-tabs">
+            <button
+              v-for="tab in tabs"
+              :key="tab.id"
+              class="settings-tab-btn"
+              :class="{ active: currentTab === tab.id }"
+              @click="currentTab = tab.id"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
           <div class="settings-body">
-            <azure-vault-settings />
+            <azure-vault-settings v-if="currentTab === 'azure'" />
+            <formatting-settings v-if="currentTab === 'formatting'" />
           </div>
         </div>
       </div>
@@ -27,9 +41,19 @@
 <script lang="ts">
 import Vue from 'vue'
 import AzureVaultSettings from './AzureVaultSettings.vue'
+import FormattingSettings from './FormattingSettings.vue'
 
 export default Vue.extend({
-  components: { AzureVaultSettings },
+  components: { AzureVaultSettings, FormattingSettings },
+  data() {
+    return {
+      currentTab: 'formatting' as string,
+      tabs: [
+        { id: 'formatting', label: 'Formatting' },
+        { id: 'azure', label: 'Azure Key Vault' },
+      ],
+    }
+  },
   methods: {
     open() {
       this.$modal.show('app-settings-modal')
@@ -56,9 +80,37 @@ export default Vue.extend({
   }
 }
 
+.settings-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-color);
+  margin: 0.75rem 0 0;
+}
+
+.settings-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: var(--text-dark);
+  margin-bottom: -1px;
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &.active {
+    color: var(--color-text);
+    border-bottom-color: var(--theme-primary, #5881D8);
+    font-weight: 500;
+  }
+}
+
 .settings-body {
   padding: 1rem 0 0.5rem;
-  max-height: 520px;
+  max-height: 480px;
   overflow-y: auto;
 }
 </style>

@@ -263,8 +263,11 @@ class CompletionLevel {
 
 }
 
-export function nameCompletion(label: string, type: string, idQuote: string, idCaseInsensitive: boolean): Completion {
-  if ((new RegExp("^[a-z_][a-z_\\d]*$", idCaseInsensitive ? "i" : "")).test(label)) return {label, type}
+export function nameCompletion(label: string, type: string, idQuote: string, _idCaseInsensitive: boolean): Completion {
+  // Only quote identifiers that genuinely require it: those containing spaces,
+  // special characters, or starting with a digit. Mixed-case identifiers like
+  // "Cardholders" or "MyTable" are valid unquoted in most SQL dialects.
+  if (/^[a-zA-Z_][a-zA-Z_\d]*$/.test(label)) return {label, type}
   return {label, type, apply: idQuote + label + idQuote}
 }
 

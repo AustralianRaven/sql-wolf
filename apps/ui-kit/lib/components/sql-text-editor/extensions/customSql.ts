@@ -16,6 +16,7 @@ type SQLConfig = CMSQLConfig & {
   disableSchemaCompletion?: boolean;
   disableKeywordCompletion?: boolean;
   columnsGetter?: ColumnsGetter;
+  autoQuoteIdentifiers?: boolean;
 };
 
 const setEntities = StateEffect.define<Entity[]>();
@@ -30,6 +31,20 @@ const entities = StateField.define<Entity[]>({
     return value;
   },
 });
+
+const setAutoQuoteIdentifiers = StateEffect.define<boolean>();
+export const autoQuoteIdentifiersField = StateField.define<boolean>({
+  create() {
+    return true;
+  },
+  update(value, tr) {
+    for (let e of tr.effects) {
+      if (e.is(setAutoQuoteIdentifiers)) return e.value;
+    }
+    return value;
+  },
+});
+
 export const configFacet = Facet.define<SQLConfig, SQLConfig>({
   combine: (values) => values[0],
 });
@@ -41,6 +56,7 @@ function customSql(config: SQLConfig = {}) {
   return [
     // we regiter entities so it can be used by other sql extensions like sqlContextComplete
     entities,
+    autoQuoteIdentifiersField,
     configFacet.of(config),
     sql(config),
   ];
@@ -49,17 +65,20 @@ function customSql(config: SQLConfig = {}) {
 function applyEntities(
   view: EditorView,
   entities: Entity[] = [],
-  defaultSchema?: string
+  defaultSchema?: string,
+  autoQuoteIdentifiers = false
 ) {
   const schema = buildSchema(
     entities,
     defaultSchema,
-    view.state.facet(completeConfig).dialect
+    view.state.facet(completeConfig).dialect,
+    autoQuoteIdentifiers
   );
   view.dispatch({
     effects: [
       setEntities.of(entities),
       setSchema.of(schema),
+      setAutoQuoteIdentifiers.of(autoQuoteIdentifiers),
     ],
   });
 }

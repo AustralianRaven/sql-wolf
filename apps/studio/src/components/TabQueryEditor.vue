@@ -53,6 +53,8 @@
         :replace-extensions="replaceExtensions"
         :context-menu-items="editorContextMenu"
         :formatter-config="selectedFormatter ?? undefined"
+        :upper-case-keywords="autocompleteUppercaseKeywords"
+        :auto-quote-identifiers="autoQuoteIdentifiers"
         :allow-presets="true"
         :presets="formatterPresets"
         @bks-initialized="handleEditorInitialized"
@@ -613,6 +615,8 @@
       ...mapGetters({
         'isCommunity': 'licenses/isCommunity',
         'userKeymap': 'settings/userKeymap',
+        'autocompleteUppercaseKeywords': 'settings/autocompleteUppercaseKeywords',
+        'autoQuoteIdentifiers': 'settings/autoQuoteIdentifiers',
       }),
       ...mapState(['usedConfig', 'connectionType', 'database', 'tables', 'storeInitialized', 'connection']),
       ...mapState('data/queries', {'savedQueries': 'items'}),
