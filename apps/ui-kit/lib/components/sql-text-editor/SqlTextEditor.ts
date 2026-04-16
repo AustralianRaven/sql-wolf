@@ -15,6 +15,7 @@ import { GreengageSQL } from "./customDialects";
 export interface CompletionSource {
   defaultSchema?: string;
   entities: Entity[];
+  autoQuoteIdentifiers?: boolean;
 }
 
 const langIdToDialect = {
@@ -49,7 +50,8 @@ export class SqlTextEditor extends TextEditor {
     applyEntities(
       this.view,
       completionSource.entities,
-      completionSource.defaultSchema
+      completionSource.defaultSchema,
+      completionSource.autoQuoteIdentifiers
     );
   }
 

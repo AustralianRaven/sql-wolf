@@ -27,7 +27,7 @@ import { EditorView } from "@codemirror/view";
 import { schemaCompletionFilter, completeConfig } from "./vendor/@codemirror/lang-sql/src/complete";
 import { Entity } from "../../types";
 import { columnsToCompletions, getAliases } from "../utils";
-import { configFacet, entities } from "./customSql";
+import { autoQuoteIdentifiersField, configFacet, entities } from "./customSql";
 import { syntaxTree } from "@codemirror/language";
 import { matchEntity } from "../../../utils/entity";
 
@@ -84,7 +84,8 @@ function sqlCompletionSource(columnsGetter: ColumnsGetter) {
             columnsGetter
           );
           const dialect = context.state.facet(completeConfig).dialect;
-          options = options.concat(columnsToCompletions(columns, dialect));
+          const autoQuote = context.state.field(autoQuoteIdentifiersField, false) !== false;
+          options = options.concat(columnsToCompletions(columns, dialect, autoQuote));
         } catch (e) {
           console.error(e);
         }
@@ -116,7 +117,8 @@ function sqlCompletionSource(columnsGetter: ColumnsGetter) {
       try {
         const columns = (await columnsGetter(entity, options)) || [];
         const dialect = context.state.facet(completeConfig).dialect;
-        options = options.concat(columnsToCompletions(columns, dialect));
+        const autoQuote = context.state.field(autoQuoteIdentifiersField, false) !== false;
+        options = options.concat(columnsToCompletions(columns, dialect, autoQuote));
       } catch (e) {
         console.error(e);
       }

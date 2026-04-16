@@ -111,7 +111,16 @@ const SettingStoreModule: Module<State, any> = {
     sqliteRuntimeExtensions(state) {
       if (!state.settings.sqliteExtensionFile) return null
       return state.settings.sqliteExtensionFile
-    }
+    },
+    autocompleteUppercaseKeywords(state) {
+      const value = state.settings.autocompleteKeywordCase?.value as string;
+      return value !== 'lower';
+    },
+    autoQuoteIdentifiers(state) {
+      const setting = state.settings.autoQuoteIdentifiers;
+      if (!setting) return false;
+      return setting.value === true;
+    },
   }
 }
 
