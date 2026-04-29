@@ -121,6 +121,10 @@ const SettingStoreModule: Module<State, any> = {
       if (!setting) return false;
       return setting.value === true;
     },
+    queryResultsLayout(state) {
+      const value = state.settings.queryResultsLayout?.value as string;
+      return value === 'stacked' ? 'stacked' : 'tabs';
+    },
   }
 }
 
