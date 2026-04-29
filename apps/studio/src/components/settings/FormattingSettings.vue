@@ -22,7 +22,6 @@
       <label class="checkbox-group" for="autoQuote">
         <input
           id="autoQuote"
-          class="form-control"
           type="checkbox"
           :checked="autoQuoteIdentifiers"
           @change="saveAutoQuote($event.target.checked)"

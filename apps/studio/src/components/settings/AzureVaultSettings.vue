@@ -5,7 +5,6 @@
     <div class="form-group">
       <label class="checkbox-group" for="vaultEnabled">
         <input
-          class="form-control"
           id="vaultEnabled"
           type="checkbox"
           v-model="form.enabled"

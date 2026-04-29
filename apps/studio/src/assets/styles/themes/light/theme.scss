@@ -200,7 +200,7 @@ x-buttons {
   }
 }
 .item-icon {
-  color: color.adjust($theme-primary, $lightness: -6%);
+  color: var(--theme-primary);
 }
 
 // Editor

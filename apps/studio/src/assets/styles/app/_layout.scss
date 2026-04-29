@@ -110,9 +110,9 @@ x-buttons > x-button[menu].btn {
 
 .btn-brand {
   color: #181818;
-  background: $theme-primary;
+  background: var(--theme-primary);
   &:hover, &:focus {
-    background: $theme-primary;
+    background: var(--theme-primary);
     color: #000;
   }
 }
@@ -311,7 +311,7 @@ label {
   }
 }
 
-input, select, textarea, .bk-form-input {
+input:not([type=checkbox]):not([type=radio]), select, textarea, .bk-form-input {
   font-family: $font-family;
   font-size: $base-font-size;
   @include form-control;
@@ -319,6 +319,7 @@ input, select, textarea, .bk-form-input {
     border-color: $input-highlight;
   }
 }
+
 .input-group {
   position: relative;
   display: flex;
@@ -429,8 +430,7 @@ input[type="checkbox"] {
   &:active,
   &:checked,
   &:checked:active {
-    background: $theme-base;
-    color: $theme-bg;
+    background: var(--theme-primary);
     box-shadow: none;
     outline: none;
   }
@@ -465,12 +465,11 @@ input[type="radio"] {
   border: 0;
   margin-top: -1px;
   margin-right: $gutter-h;
-  border-radius: 5px;
+  border-radius: 50%;
   transition: background 0.2s ease-in-out;
   cursor: pointer;
-  &:checked{
-    background: color.adjust($theme-primary, $lightness: -10%);
-    color: rgba(black, 0.87);
+  &:checked {
+    background: var(--theme-primary);
     box-shadow: none;
   }
 }
@@ -567,7 +566,7 @@ input[type=file] {
 }
 .item-icon {
   font-size: 12px;
-  color: color.adjust($theme-primary, $lightness: -15%);
+  color: var(--theme-primary);
   &.schema-icon {
     color: $text-lighter;
   }

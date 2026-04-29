@@ -20,7 +20,7 @@
         }
         &:hover {
           span.material-icons {
-            color: $theme-primary
+            color: var(--theme-primary)
           }
         }
       }

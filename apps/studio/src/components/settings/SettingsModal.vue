@@ -5,7 +5,7 @@
       class="vue-dialog beekeeper-modal app-settings-modal"
       height="auto"
       :scrollable="true"
-      :max-height="600"
+      :max-height="750"
     >
       <div v-kbd-trap="true">
         <div class="dialog-content">
@@ -113,7 +113,7 @@ export default Vue.extend({
 
 .settings-body {
   padding: 1rem 0 0.5rem;
-  max-height: 480px;
+  max-height: 630px;
   overflow-y: auto;
 }
 </style>

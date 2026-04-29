@@ -125,6 +125,10 @@ const SettingStoreModule: Module<State, any> = {
       const value = state.settings.queryResultsLayout?.value as string;
       return value === 'stacked' ? 'stacked' : 'tabs';
     },
+    accentColor(state) {
+      const value = state.settings.accentColor?.value as string;
+      return value || null;
+    },
   }
 }
 
