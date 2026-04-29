@@ -10,7 +10,7 @@
         v-hotkey="keymap"
       >
         <span
-          v-show="results?.length > 1"
+          v-show="results?.length > 1 && layout !== 'stacked'"
           class="statusbar-item result-selector"
           :title="'Results'"
         >
@@ -77,6 +77,7 @@
     </template>
     <span class="expand" />
     <x-button
+      v-if="layout !== 'stacked'"
       class="btn btn-flat btn-icon end"
       :disabled="results?.length === 0"
       menu
@@ -189,7 +190,7 @@ const shortEnglishHumanizer = humanizeDuration.humanizer({
 });
 
 export default {
-  props: ['results', 'running', 'value', 'executeTime', 'wrapText', 'active', 'elapsedTime'],
+  props: ['results', 'running', 'value', 'executeTime', 'wrapText', 'active', 'elapsedTime', 'layout'],
   components: { Statusbar },
   data() {
     return {

@@ -270,6 +270,71 @@
         :message="runningText"
         v-if="running"
       />
+      <template v-else-if="queryResultsLayout === 'stacked' && results && results.length > 0">
+        <div class="stacked-results">
+          <div
+            v-for="(r, idx) in results"
+            :key="idx"
+            class="stacked-result-block"
+          >
+            <div class="stacked-result-header">
+              <span class="stacked-result-label">
+                Result {{ idx + 1 }}
+                <span v-if="r.rows && r.rows.length > 0">· {{ r.rows.length }} {{ r.rows.length === 1 ? 'row' : 'rows' }}</span>
+                <span v-else-if="r.affectedRows">· {{ r.affectedRows }} rows affected</span>
+              </span>
+              <x-button
+                v-if="r.rows && r.rows.length > 0"
+                class="btn btn-flat btn-icon stacked-download-btn"
+                menu
+              >
+                <i class="material-icons">download</i>
+                <i class="material-icons">arrow_drop_down</i>
+                <x-menu>
+                  <x-menuitem @click.prevent="stackedDownload(idx, 'csv')">
+                    <x-label>Download as CSV</x-label>
+                  </x-menuitem>
+                  <x-menuitem @click.prevent="stackedDownload(idx, 'xlsx')">
+                    <x-label>Download as Excel</x-label>
+                  </x-menuitem>
+                  <x-menuitem @click.prevent="stackedDownload(idx, 'json')">
+                    <x-label>Download as JSON</x-label>
+                  </x-menuitem>
+                  <x-menuitem @click.prevent="stackedDownload(idx, 'md')">
+                    <x-label>Download as Markdown</x-label>
+                  </x-menuitem>
+                  <hr>
+                  <x-menuitem @click.prevent="stackedClipboard(idx)">
+                    <x-label>Copy to Clipboard (TSV / Excel)</x-label>
+                  </x-menuitem>
+                  <x-menuitem @click.prevent="stackedClipboard(idx, 'json')">
+                    <x-label>Copy to Clipboard (JSON)</x-label>
+                  </x-menuitem>
+                  <x-menuitem @click.prevent="stackedClipboard(idx, 'md')">
+                    <x-label>Copy to Clipboard (Markdown)</x-label>
+                  </x-menuitem>
+                </x-menu>
+              </x-button>
+            </div>
+            <result-table
+              v-if="r.rows && r.rows.length > 0"
+              :ref="'stackedTable_' + idx"
+              :active="active"
+              :table-height="200"
+              :result="r"
+              :query="query"
+              :tab="tab"
+              :binary-encoding="$bksConfig.ui.general.binaryEncoding"
+            />
+            <div class="message" v-else>
+              <div class="alert alert-info">
+                <i class="material-icons-outlined">info</i>
+                <span>No results. {{ r.affectedRows || 0 }} rows affected.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
       <result-table
         ref="table"
         v-else-if="showResultTable"
@@ -317,6 +382,7 @@
         v-model="selectedResult"
         :results="results"
         :running="running"
+        :layout="queryResultsLayout"
         @download="download"
         @clipboard="clipboard"
         @clipboardJson="clipboardJson"
@@ -617,6 +683,7 @@
         'userKeymap': 'settings/userKeymap',
         'autocompleteUppercaseKeywords': 'settings/autocompleteUppercaseKeywords',
         'autoQuoteIdentifiers': 'settings/autoQuoteIdentifiers',
+        'queryResultsLayout': 'settings/queryResultsLayout',
       }),
       ...mapState(['usedConfig', 'connectionType', 'database', 'tables', 'storeInitialized', 'connection']),
       ...mapState('data/queries', {'savedQueries': 'items'}),
@@ -1142,6 +1209,16 @@
         // eslint-disable-next-line
         // @ts-ignore
         const data = this.$refs.table.clipboard('md')
+      },
+      stackedDownload(idx, format) {
+        const ref = this.$refs[`stackedTable_${idx}`]
+        const table = Array.isArray(ref) ? ref[0] : ref
+        if (table) table.download(format)
+      },
+      stackedClipboard(idx, format = null) {
+        const ref = this.$refs[`stackedTable_${idx}`]
+        const table = Array.isArray(ref) ? ref[0] : ref
+        if (table) table.clipboard(format)
       },
       selectEditor() {
         this.focusElement = 'text-editor'
@@ -1671,6 +1748,39 @@
 <style lang="scss" scoped>
   @use "sass:color";
   @import '../assets/styles/app/_variables';
+
+  .stacked-results {
+    overflow-y: auto;
+    height: 100%;
+
+    .stacked-result-block {
+      border-bottom: 1px solid var(--border-color);
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    .stacked-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.2rem 0.4rem 0.2rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      background: var(--bg-secondary, var(--query-editor-bg));
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .stacked-download-btn {
+      font-size: 0.75rem;
+      padding: 0.1rem 0.3rem;
+    }
+  }
 
   label[for="commit-mode"] {
     color: var(--text);
