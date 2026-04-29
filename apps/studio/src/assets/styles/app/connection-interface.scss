@@ -112,7 +112,7 @@
   .pitch {
     text-align: center;
     a {
-      color: $theme-primary;
+      color: var(--theme-primary);
       &:hover {
         text-decoration: underline;
       }
@@ -181,7 +181,7 @@
   }
   &.enabled {
     i {
-      color: $theme-primary;
+      color: var(--theme-primary);
     }
   }
   x-switch {

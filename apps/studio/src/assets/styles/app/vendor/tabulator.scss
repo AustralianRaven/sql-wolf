@@ -111,7 +111,7 @@ $columnResizeGuideColor:      color.mix($query-editor-bg, $theme-base, 80%);
     }
     &.row-moved {
       .tabulator-cell {
-        background: rgba($theme-primary, 0.08) !important;
+        background: color-mix(in srgb, var(--theme-primary) 8%, transparent) !important;
       }
     }
   }
@@ -537,7 +537,7 @@ $columnResizeGuideColor:      color.mix($query-editor-bg, $theme-base, 80%);
           content: 'vpn_key';
           font-family: 'Material Icons';
           font-size: $font-size;
-          color: $theme-primary;
+          color: var(--theme-primary);
           padding-left: $foreign-key-width - $font-size;
           display: inline-flex;
           align-items: center;
@@ -810,11 +810,11 @@ $columnResizeGuideColor:      color.mix($query-editor-bg, $theme-base, 80%);
 
 .tabulator .tabulator-tableholder .tabulator-range-overlay {
   .tabulator-range, .tabulator-range-cell-active {
-    border-color: color.adjust($theme-primary, $lightness: -20%);
+    border-color: var(--theme-primary);
     border-width: 1px;
   }
   .tabulator-range.tabulator-range-active::after {
-    background-color: color.adjust($theme-primary, $lightness: -20%);
+    background-color: var(--theme-primary);
   }
   .tabulator-range.copied {
     border-style: dashed;

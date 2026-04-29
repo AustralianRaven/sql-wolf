@@ -125,6 +125,7 @@ export default Vue.extend({
       'isTrial': 'isTrial',
       'isUltimate': 'isUltimate',
       'themeValue': 'settings/themeValue',
+      'accentColor': 'settings/accentColor',
     }),
     editorFontSize() {
       return this.$store.state.settings?.settings?.editorFontSize?.value || 14
@@ -137,6 +138,16 @@ export default Vue.extend({
     themeValue() {
       document.body.className = `theme-${this.themeValue}`
       this.trigger(AppEvent.changedTheme, this.themeValue)
+      if (this.accentColor) {
+        document.body.style.setProperty('--theme-primary', this.accentColor)
+      }
+    },
+    accentColor(val) {
+      if (val) {
+        document.body.style.setProperty('--theme-primary', val)
+      } else {
+        document.body.style.removeProperty('--theme-primary')
+      }
     },
     status(curr, prev) {
       this.$store.dispatch('updateWindowTitle')
@@ -173,6 +184,9 @@ export default Vue.extend({
     })
     if (this.themeValue) {
       document.body.className = `theme-${this.themeValue}`
+    }
+    if (this.accentColor) {
+      document.body.style.setProperty('--theme-primary', this.accentColor)
     }
 
     if (this.url) {

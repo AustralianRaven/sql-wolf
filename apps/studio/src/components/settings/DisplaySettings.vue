@@ -27,6 +27,47 @@
         </label>
       </div>
     </div>
+
+    <div class="setting-section-title">Accent Color</div>
+
+    <div class="form-group">
+      <label>Color</label>
+      <div class="accent-color-row">
+        <input
+          type="color"
+          class="color-input"
+          :value="accentColorValue"
+          @input="onColorInput"
+          @change="onColorChange"
+        />
+        <span class="color-hex">{{ accentColorValue }}</span>
+        <button
+          class="btn btn-flat reset-btn"
+          :disabled="!accentColor"
+          @click="resetAccentColor"
+        >
+          Reset
+        </button>
+      </div>
+      <small class="help text-muted">
+        Overrides the theme's accent color. Used for active tab indicators, highlights, and other accents.
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label>Presets</label>
+      <div class="color-presets">
+        <button
+          v-for="preset in colorPresets"
+          :key="preset.hex"
+          class="color-swatch"
+          :class="{ active: accentColorValue === preset.hex }"
+          :style="{ background: preset.hex }"
+          :title="preset.label"
+          @click="applyPreset(preset.hex)"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -34,11 +75,31 @@
 import Vue from 'vue'
 import { mapGetters } from 'vuex'
 
+const THEME_DEFAULT = '#fad83b'
+
 export default Vue.extend({
+  data() {
+    return {
+      pendingColor: null as string | null,
+      colorPresets: [
+        { label: 'Yellow (default)', hex: '#fad83b' },
+        { label: 'Blue',   hex: '#5881D8' },
+        { label: 'Cyan',   hex: '#4ad0ff' },
+        { label: 'Green',  hex: '#3ddc84' },
+        { label: 'Red',    hex: '#ff4757' },
+        { label: 'Purple', hex: '#a855f7' },
+        { label: 'Orange', hex: '#ff6b2b' },
+      ],
+    }
+  },
   computed: {
     ...mapGetters({
       queryResultsLayout: 'settings/queryResultsLayout',
+      accentColor: 'settings/accentColor',
     }),
+    accentColorValue(): string {
+      return this.pendingColor ?? this.accentColor ?? THEME_DEFAULT
+    },
   },
   methods: {
     async saveLayout(value: string) {
@@ -46,6 +107,24 @@ export default Vue.extend({
         key: 'queryResultsLayout',
         value,
       })
+    },
+    onColorInput(e: Event) {
+      const value = (e.target as HTMLInputElement).value
+      this.pendingColor = value
+      document.body.style.setProperty('--theme-primary', value)
+    },
+    async onColorChange(e: Event) {
+      const value = (e.target as HTMLInputElement).value
+      this.pendingColor = null
+      await this.$store.dispatch('settings/save', { key: 'accentColor', value })
+    },
+    async applyPreset(hex: string) {
+      this.pendingColor = null
+      await this.$store.dispatch('settings/save', { key: 'accentColor', value: hex })
+    },
+    async resetAccentColor() {
+      this.pendingColor = null
+      await this.$store.dispatch('settings/save', { key: 'accentColor', value: null })
     },
   },
 })
@@ -58,6 +137,10 @@ export default Vue.extend({
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
+
+  & + .form-group {
+    margin-top: 0.75rem;
+  }
 }
 
 .radio-group {
@@ -89,9 +172,82 @@ export default Vue.extend({
   .help {
     grid-row: 2;
     grid-column: 2;
+  }
+}
+
+.accent-color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.color-input {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0.1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.color-hex {
+  font-size: 0.85rem;
+  font-family: monospace;
+  color: var(--text);
+  min-width: 5rem;
+}
+
+.reset-btn {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.6rem;
+  margin-left: auto;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.color-presets {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.1s;
+
+  &:hover {
+    transform: scale(1.15);
+  }
+
+  &.active {
+    border-color: var(--text);
+  }
+}
+
+.help {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-light);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+
+  label {
     display: block;
-    font-size: 0.78rem;
-    line-height: 1.4;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    font-size: 0.875rem;
   }
 }
 </style>

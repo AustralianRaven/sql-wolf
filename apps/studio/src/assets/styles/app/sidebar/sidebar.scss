@@ -187,7 +187,7 @@
           &.active {
             background: rgba($theme-base, 0.1);
             .material-icons {
-              color: $theme-primary;
+              color: var(--theme-primary);
             }
           }
 
@@ -261,7 +261,7 @@
     border-radius: $list-heading-height;
     background: $border-color;
     &.active {
-      color: $theme-primary;
+      color: var(--theme-primary);
     }
   }
   .actions {
@@ -432,7 +432,7 @@
         &.pinned {
           display: inline-flex;
           i.bk-pin {
-            color: $theme-primary;
+            color: var(--theme-primary);
           }
           i.material-icons {
             display:none;
