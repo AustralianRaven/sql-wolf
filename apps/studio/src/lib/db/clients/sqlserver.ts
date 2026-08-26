@@ -220,6 +220,23 @@ export class SQLServerClient extends BasicDatabaseClient<SQLServerResult, Transa
   async executeQuery(queryText: string, options: ExecuteOptions = {}): Promise<NgQueryResult[]> {
     const commands = this.identifyCommands(queryText);
 
+    // Running statements one at a time exists only so BEGIN / COMMIT / ROLLBACK
+    // can be routed to the reserved connection behind manual commit mode. When
+    // there is nothing to intercept, send the script as one batch instead.
+    //
+    // Statements in a script share variables, temp tables and @@TRANCOUNT, and
+    // a batch of their own breaks all three. The sharp edge is a script whose
+    // BEGIN TRANSACTION lands at the end of one batch with its COMMIT in the
+    // next: the first batch returns with @@TRANCOUNT raised and SQL Server
+    // answers with "Transaction count after EXECUTE indicates a mismatching
+    // number of BEGIN and COMMIT statements".
+    const managesTransactions = !_.isNil(options.tabId)
+      && commands.some((command) => command.executionType === 'TRANSACTION');
+
+    if (!managesTransactions) {
+      return await this.executeBatch(queryText, commands, options);
+    }
+
     const results: NgQueryResult[] = [];
 
     for (const query of commands) {
@@ -248,6 +265,28 @@ export class SQLServerClient extends BasicDatabaseClient<SQLServerResult, Transa
     }
 
     return results;
+  }
+
+  /**
+   * Runs the whole script as one batch and turns each recordset it returns into
+   * a result. Commands are matched to recordsets by position; statements that
+   * produce no recordset (DECLARE, SET) simply shift the pairing, so the type is
+   * treated as a hint and parseRowQueryResult falls back when it is missing.
+   */
+  private async executeBatch(
+    queryText: string,
+    commands: IdentifyResult[],
+    options: ExecuteOptions
+  ): Promise<NgQueryResult[]> {
+    const { data, rowsAffected } = await this.driverExecuteSingle(queryText, options);
+
+    const raw = !data.recordsets.length && rowsAffected > 0
+      ? [[] as any]
+      : data.recordsets as IRecordSet<any>;
+
+    return raw.map((result, idx) => this.parseRowQueryResult(
+      result, rowsAffected, commands[idx], result?.columns, options.arrayRowMode
+    ));
   }
 
   async query(queryText: string, tabId: number) {

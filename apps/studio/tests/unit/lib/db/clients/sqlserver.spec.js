@@ -192,4 +192,89 @@ describe("SQL Server qualified-name handling for dotted table names (#3722)", ()
       expect(sql).not.toContain('AND')
     })
   })
+
+  describe("executeQuery batching", () => {
+
+    function makeQueryClient() {
+      const client = makeClient()
+      client.driverExecuteSingle = jest.fn().mockResolvedValue({
+        data: { recordsets: [], recordset: [] },
+        rowsAffected: 0,
+      })
+      return client
+    }
+
+    // Statements in one script share variables, temp tables and @@TRANCOUNT.
+    // Splitting them into separate batches breaks all three; the loudest case
+    // is a BEGIN whose COMMIT lands in the next batch, which SQL Server answers
+    // with "Transaction count after EXECUTE indicates a mismatching number of
+    // BEGIN and COMMIT statements".
+    const script = [
+      'SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED',
+      '',
+      'BEGIN TRANSACTION;',
+      '',
+      'DECLARE @item NVARCHAR(MAX)',
+      "SET @item = '%RN-1%'",
+      '',
+      'SELECT TOP 100 * FROM Workflow.WorkItem WHERE Title LIKE @item',
+      '',
+      'COMMIT TRANSACTION;',
+    ].join('\n')
+
+    it("sends a transaction script as a single batch", async () => {
+      const client = makeQueryClient()
+      await client.executeQuery(script, { tabId: 1 })
+
+      expect(client.driverExecuteSingle).toHaveBeenCalledTimes(1)
+      const sent = client.driverExecuteSingle.mock.calls[0][0]
+      expect(sent).toContain('BEGIN TRANSACTION')
+      expect(sent).toContain('COMMIT TRANSACTION')
+      expect(sent).toContain('DECLARE @item')
+    })
+
+    it("keeps a declared variable in the same batch as its use", async () => {
+      const client = makeQueryClient()
+      await client.executeQuery('DECLARE @x INT;\nSET @x = 1;\nSELECT @x;', { tabId: 1 })
+
+      expect(client.driverExecuteSingle).toHaveBeenCalledTimes(1)
+      expect(client.driverExecuteSingle.mock.calls[0][0]).toContain('DECLARE @x')
+    })
+
+    it("still runs statement by statement when a transaction must be intercepted", async () => {
+      const client = makeQueryClient()
+      client.startTransaction = jest.fn().mockResolvedValue(undefined)
+      client.commitTransaction = jest.fn().mockResolvedValue(undefined)
+
+      // Bare BEGIN/COMMIT are what the identifier recognises as TRANSACTION,
+      // which is the path manual commit mode depends on.
+      client.identifyCommands = jest.fn().mockReturnValue([
+        { text: 'BEGIN', type: 'BEGIN_TRANSACTION', executionType: 'TRANSACTION' },
+        { text: 'SELECT 1', type: 'SELECT', executionType: 'LISTING' },
+        { text: 'COMMIT', type: 'COMMIT', executionType: 'TRANSACTION' },
+      ])
+
+      await client.executeQuery('BEGIN; SELECT 1; COMMIT;', { tabId: 1 })
+
+      expect(client.startTransaction).toHaveBeenCalledWith(1)
+      expect(client.commitTransaction).toHaveBeenCalledWith(1)
+      // Only the SELECT reaches the driver; the transaction statements are
+      // routed to the reserved connection instead.
+      expect(client.driverExecuteSingle).toHaveBeenCalledTimes(1)
+      expect(client.driverExecuteSingle.mock.calls[0][0]).toBe('SELECT 1')
+    })
+
+    it("does not intercept transactions when there is no tab to own them", async () => {
+      const client = makeQueryClient()
+      client.startTransaction = jest.fn()
+      client.identifyCommands = jest.fn().mockReturnValue([
+        { text: 'BEGIN', type: 'BEGIN_TRANSACTION', executionType: 'TRANSACTION' },
+      ])
+
+      await client.executeQuery('BEGIN;', {})
+
+      expect(client.startTransaction).not.toHaveBeenCalled()
+      expect(client.driverExecuteSingle).toHaveBeenCalledTimes(1)
+    })
+  })
 })
