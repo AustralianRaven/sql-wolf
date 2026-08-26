@@ -7,6 +7,7 @@ import { UserSetting } from './models/user_setting'
 import { LoggerOptions } from 'typeorm/logger/LoggerOptions'
 import { PinnedEntity } from "./models/PinnedEntity"
 import { CloudCredential } from "./models/CloudCredential"
+import { VaultProvider } from "./models/VaultProvider"
 import { OpenTab } from "./models/OpenTab"
 import { LicenseKey } from "./models/LicenseKey"
 import { HiddenEntity } from "./models/HiddenEntity"
@@ -31,6 +32,7 @@ const models = [
   UserSetting,
   PinnedEntity,
   CloudCredential,
+  VaultProvider,
   OpenTab,
   LicenseKey,
   HiddenEntity,

@@ -160,7 +160,7 @@ export default {
     VaultLoader,
   },
   computed: {
-    ...mapGetters('azureVault', { vaultEnabled: 'enabled' }),
+    ...mapGetters('vault', { vaultEnabled: 'enabled' }),
     supportsSocketPath() {
       return findClient(this.config.connectionType).supportsSocketPath
     },

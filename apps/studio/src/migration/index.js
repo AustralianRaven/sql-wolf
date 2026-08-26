@@ -97,6 +97,7 @@ import addSnowflakeOptions from './20260501_add_snowflake_options'
 import addWindowsAuthToConnections from './20260618_add_windows_auth_to_connections'
 import addSqlServerOptions from './20260626_add_sqlserver_options'
 import addVaultSecretName from './20260326_add_vault_secret_name'
+import addVaultProviders from './20260827_add_vault_providers'
 
 import ultimate from './ultimate/index'
 
@@ -154,6 +155,7 @@ const realMigrations = [
   addWindowsAuthToConnections,
   addSqlServerOptions,
   addVaultSecretName,
+  addVaultProviders,
 ]
 
 // fixtures require the models

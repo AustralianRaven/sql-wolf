@@ -30,7 +30,7 @@
 
           <div class="settings-body">
             <display-settings v-if="currentTab === 'display'" />
-            <azure-vault-settings v-if="currentTab === 'azure'" />
+            <vault-settings v-if="currentTab === 'vaults'" />
             <formatting-settings v-if="currentTab === 'formatting'" />
           </div>
         </div>
@@ -41,19 +41,19 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import AzureVaultSettings from './AzureVaultSettings.vue'
+import VaultSettings from './VaultSettings.vue'
 import FormattingSettings from './FormattingSettings.vue'
 import DisplaySettings from './DisplaySettings.vue'
 
 export default Vue.extend({
-  components: { AzureVaultSettings, FormattingSettings, DisplaySettings },
+  components: { VaultSettings, FormattingSettings, DisplaySettings },
   data() {
     return {
       currentTab: 'display' as string,
       tabs: [
         { id: 'display', label: 'Display' },
         { id: 'formatting', label: 'Formatting' },
-        { id: 'azure', label: 'Azure Key Vault' },
+        { id: 'vaults', label: 'Key Vaults' },
       ],
     }
   },

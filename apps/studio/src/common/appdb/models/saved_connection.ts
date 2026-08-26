@@ -334,8 +334,17 @@ export class SavedConnection extends DbConnectionBase implements IConnection {
   @JoinColumn({ name: 'connectionFolderId' })
   connectionFolder?: ConnectionFolder
 
+  /** Legacy single-secret field. Read only, so old connections keep working. */
   @Column({ type: 'varchar', nullable: true })
   vaultSecretName: Nullable<string> = null
+
+  /**
+   * Ordered vault secret refs, most specific first, e.g.
+   * "Qa Vault:devau--qa-a-sa,Qa Vault:devau,Shared Vault:global".
+   * Refs only — resolved values are never written here.
+   */
+  @Column({ type: 'varchar', nullable: true })
+  vaultSecretRefs: Nullable<string> = null
 
   @Column({type: 'varchar', nullable: true, transformer: [encrypt]})
   password: Nullable<string> = null

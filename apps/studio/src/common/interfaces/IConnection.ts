@@ -84,6 +84,7 @@ export interface IConnection extends ISimpleConnection {
   sshBastionPassword: Nullable<string>
   sshBastionKeyfilePassword: Nullable<string>
   vaultSecretName?: Nullable<string>
+  vaultSecretRefs?: Nullable<string>
 }
 
 export interface ICloudSavedConnection extends IConnection, IShareable {

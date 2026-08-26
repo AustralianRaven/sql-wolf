@@ -18,7 +18,7 @@ import { ExportHandlers } from '@commercial/backend/handlers/exportHandlers';
 import { BackupHandlers } from '@commercial/backend/handlers/backupHandlers';
 import { CliHandlers } from '@commercial/backend/handlers/cliHandlers';
 import { AwsHandlers } from '@commercial/backend/handlers/awsHandlers';
-import { AzureVaultHandlers } from '@/handlers/azureVaultHandlers';
+import { VaultHandlers } from '@/handlers/vaultHandlers';
 import { ImportHandlers } from '@commercial/backend/handlers/importHandlers';
 import { EnumHandlers } from '@commercial/backend/handlers/enumHandlers';
 import { TempHandlers } from '@/handlers/tempHandlers';
@@ -97,7 +97,7 @@ export const handlers: Handlers = {
   ...LockHandlers,
   ...FormatterPresetHandlers,
   ...WorkspaceHandlers,
-  ...AzureVaultHandlers,
+  ...VaultHandlers,
   ...(platformInfo.isDevelopment && DevHandlers),
 };
 

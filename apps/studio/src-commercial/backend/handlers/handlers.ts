@@ -2,7 +2,7 @@ import { IFileHandlers } from "@/handlers/fileHandlers";
 import { IGeneratorHandlers } from "@/handlers/generatorHandlers";
 import { IQueryHandlers } from "@/handlers/queryHandlers";
 import { ITempHandlers } from "@/handlers/tempHandlers";
-import { IAzureVaultHandlers } from "@/handlers/azureVaultHandlers";
+import { IVaultHandlers } from "@/handlers/vaultHandlers";
 
 // commercial
 import { IConnectionHandlers } from "./connHandlers";
@@ -27,4 +27,4 @@ export interface Handlers
     ITempHandlers,
     IAwsHandlers,
     IWorkspaceHandlers,
-    IAzureVaultHandlers {}
+    IVaultHandlers {}
