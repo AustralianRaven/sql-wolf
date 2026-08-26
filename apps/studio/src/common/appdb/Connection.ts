@@ -7,6 +7,7 @@ import { UserSetting } from './models/user_setting'
 import { LoggerOptions } from 'typeorm/logger/LoggerOptions'
 import { PinnedEntity } from "./models/PinnedEntity"
 import { CloudCredential } from "./models/CloudCredential"
+import { VaultProvider } from "./models/VaultProvider"
 import { OpenTab } from "./models/OpenTab"
 import { LicenseKey } from "./models/LicenseKey"
 import { HiddenEntity } from "./models/HiddenEntity"
@@ -20,6 +21,8 @@ import { EncryptedPluginData } from "./models/EncryptedPluginData"
 import { FormatterPreset } from "./models/FormatterPreset"
 import { QueryFolder } from "./models/QueryFolder"
 import { ConnectionFolder } from "./models/ConnectionFolder"
+import { TabulatorPersistence } from "./models/TabulatorPersistence"
+import { QueryAudit } from "./models/QueryAudit"
 
 const models = [
   SavedConnection,
@@ -29,6 +32,7 @@ const models = [
   UserSetting,
   PinnedEntity,
   CloudCredential,
+  VaultProvider,
   OpenTab,
   LicenseKey,
   HiddenEntity,
@@ -42,6 +46,8 @@ const models = [
   FormatterPreset,
   QueryFolder,
   ConnectionFolder,
+  TabulatorPersistence,
+  QueryAudit,
 ]
 
 interface IConnectionState {

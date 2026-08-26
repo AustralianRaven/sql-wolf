@@ -1,9 +1,8 @@
 <template>
-  <div class="style-wrapper">
+  <div class="style-wrapper" :style="{ '--bks-text-editor-font-size': `${editorFontSize}px` }">
     <div
       class="beekeeper-studio-wrapper"
       :class="{ 'beekeeper-studio-minimal-mode': $store.getters.minimalMode }"
-      :style="{ '--bks-text-editor-font-size': `${editorFontSize}px` }"
     >
       <titlebar />
       <template v-if="storeInitialized">
@@ -18,10 +17,6 @@
         <upgrade-required-modal />
       </template>
     </div>
-    <portal-target
-      name="menus"
-      multiple
-    />
     <portal-target
       name="modals"
       multiple
@@ -39,14 +34,23 @@
     <plugin-controller :editor-font-size="editorFontSize" />
     <plugin-manager-modal />
     <keyboard-shortcuts-modal />
+    <move-item-modal />
+    <move-folder-modal />
     <confirmation-modal-manager />
     <lock-manager />
+    <input-ephemeral-modal name="input-ephemeral-modal" />
     <util-died-modal />
+    <share-modal />
     <template v-if="licensesInitialized">
       <trial-expired-modal />
       <license-expired-modal />
       <lifetime-license-expired-modal />
     </template>
+    <portal-target
+      name="menus"
+      multiple
+      class="portal-target-menus"
+    />
   </div>
 </template>
 
@@ -86,6 +90,10 @@ import PluginManagerModal from '@/components/plugins/PluginManagerModal.vue'
 import KeyboardShortcutsModal from '@/components/common/modals/KeyboardShortcutsModal.vue'
 import PluginController from '@/components/plugins/PluginController.vue'
 import LockManager from "@/components/managers/LockManager.vue";
+import InputEphemeralModal from "@/components/common/modals/InputEphemeralModal.vue";
+import ShareModal from "@/components/common/modals/ShareModal.vue";
+import MoveItemModal from "@/components/common/modals/MoveItemModal.vue";
+import MoveFolderModal from "@/components/common/modals/MoveFolderModal.vue";
 
 import rawLog from '@bksLogger'
 import { assignContextMenuToAllInputs } from './mixins/assignContextMenuToAllInputs'
@@ -102,6 +110,7 @@ export default Vue.extend({
     EnterLicenseModal, TrialExpiredModal, LicenseExpiredModal,
     LifetimeLicenseExpiredModal, WorkspaceCreateModal, WorkspaceRenameModal, WorkspaceDeleteModal,
     PluginManagerModal, ConfigurationWarningModal, PluginController, LockManager, KeyboardShortcutsModal,
+    InputEphemeralModal, ShareModal, MoveItemModal, MoveFolderModal,
   },
   data() {
     return {
@@ -169,7 +178,10 @@ export default Vue.extend({
     this.interval = setInterval(this.notifyFreeTrial, globals.trialNotificationInterval)
     this.$store.dispatch('licenses/updateAll');
     this.licenseInterval = setInterval(
-      () => this.$store.dispatch('licenses/updateAll'),
+      () => {
+        log.debug('license check - interval')
+        this.$store.dispatch('licenses/updateAll')
+      },
       globals.licenseCheckInterval
     )
     const query = querystring.parse(window.location.search, { parseBooleans: true })
@@ -260,7 +272,9 @@ export default Vue.extend({
 })
 </script>
 
-<style>
-
+<style scoped>
+.portal-target-menus::v-deep > * {
+  z-index: 99999;
+}
 
 </style>

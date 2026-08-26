@@ -27,7 +27,7 @@ export function autoquoteHandler(
       .match(/("[^"]*"|[^.]+)/g)
       .map((n) => (/^\d/.test(n) && n !== alias ? `"${n}"` : n))
       .map((n) =>
-        /[^a-zA-Z0-9_]/.test(n) && !/"/.test(n) && n !== alias ? `"${n}"` : n
+        /[^a-z0-9_]/.test(n) && !/"/.test(n) && n !== alias ? `"${n}"` : n
       )
       .join(".");
 

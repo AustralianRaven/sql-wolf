@@ -35,7 +35,7 @@ const externals = ['better-sqlite3', 'sqlite3',
         'oracledb', '@electron/remote', "@google-cloud/bigquery",
         'pg-query-stream', 'electron', '@duckdb/node-api',
         '@mongosh/browser-runtime-electron', '@mongosh/service-provider-node-driver',
-        'mongodb-client-encryption', 'sqlanywhere', 'ws', 'kerberos',
+        'mongodb-client-encryption', 'sqlanywhere', 'ws', 'kerberos', 'msnodesqlv8',
         ...ensureInstalled,
       ]
 
@@ -43,17 +43,27 @@ let electron = null
 /** @type {fs.FSWatcher[]} */
 const configWatchers = {}
 
+// Debounced because the main and utility builds run as separate esbuild
+// contexts (different @bksLogger alias each); their onEnd hooks both
+// call this, and 500ms is enough to coalesce their finish into one
+// electron restart.
 const restartElectron = _.debounce(() => {
   if (electron) {
+    // Windows has no real signals, so this process exits with code 1 and a
+    // null signal — the same shape as a crash. Mark it so the exit handler
+    // can tell a deliberate restart from a real one.
+    electron.restarting = true
     process.kill(electron.pid, 'SIGINT')
   }
   // start electron again
-  electron = spawn(electronBin, ['.'], { stdio: 'inherit' })
-  electron.on('exit', (code, signal) => {
+  const child = spawn(electronBin, ['.'], { stdio: 'inherit' })
+  child.on('exit', (code, signal) => {
     console.log('electron exited', code, signal)
+    if (child.restarting) return
     if (!signal) process.exit()
   })
-  console.log('spawned electron, pid: ', electron.pid)
+  electron = child
+  console.log('spawned electron, pid: ', child.pid)
 
 }, 500)
 
@@ -99,18 +109,37 @@ const commonArgs = {
   }
 }
 
-  const mainArgs = {
-    ...commonArgs,
-    entryPoints: ['src-commercial/entrypoints/main.ts', 'src-commercial/entrypoints/utility.ts', 'src-commercial/entrypoints/preload.ts'],
-    plugins: [getElectronPlugin("Main")]
-  }
+// `@bksLogger` resolves to a different file per build so each process
+// gets a logger flavored for its electron-log entry point — main+preload
+// share electron-log/main (the IPC sink for renderer messages), utility
+// runs electron-log/node. The ambient declaration in src/lib/log/
+// bksLogger.d.ts keeps the IDE / tsc happy with a base-Logger type.
+const aliasFor = (loggerFile) => ({
+  '@bksLogger': path.resolve('./src/lib/log/' + loggerFile),
+})
 
-  if(isWatching) {
-    const main = await esbuild.context(mainArgs)
-    Promise.all([main.watch()])
-  } else {
-    Promise.all([
-      esbuild.build(mainArgs),
-    ])
-  }
+const mainArgs = {
+  ...commonArgs,
+  entryPoints: ['src-commercial/entrypoints/main.ts', 'src-commercial/entrypoints/preload.ts'],
+  alias: aliasFor('mainLogger.ts'),
+  plugins: [getElectronPlugin("Main")]
+}
+
+const utilityArgs = {
+  ...commonArgs,
+  entryPoints: ['src-commercial/entrypoints/utility.ts'],
+  alias: aliasFor('utilityLogger.ts'),
+  plugins: [getElectronPlugin("Utility")]
+}
+
+if(isWatching) {
+  const main = await esbuild.context(mainArgs)
+  const utility = await esbuild.context(utilityArgs)
+  await Promise.all([main.watch(), utility.watch()])
+} else {
+  await Promise.all([
+    esbuild.build(mainArgs),
+    esbuild.build(utilityArgs),
+  ])
+}
 // launch electron

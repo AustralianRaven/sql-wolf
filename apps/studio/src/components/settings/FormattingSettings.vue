@@ -8,30 +8,32 @@
         id="keywordCase"
         class="form-control"
         :value="keywordCase"
-        @change="saveKeywordCase($event.target.value)"
+        @change="saveSetting('autocompleteKeywordCase', $event.target.value)"
       >
+        <option value="preserve">Match what you type (SEL &rarr; SELECT, sel &rarr; select)</option>
         <option value="upper">UPPERCASE (SELECT, FROM, WHERE)</option>
         <option value="lower">lowercase (select, from, where)</option>
       </select>
       <small class="help text-muted">
-        Controls the casing of SQL keywords suggested in the autocomplete dropdown.
+        Sets the casing of SQL keywords offered in the autocomplete dropdown.
       </small>
     </div>
 
     <div class="form-group">
-      <label class="checkbox-group" for="autoQuote">
-        <input
-          id="autoQuote"
-          type="checkbox"
-          :checked="autoQuoteIdentifiers"
-          @change="saveAutoQuote($event.target.checked)"
-        />
-        <span>Auto-quote identifiers</span>
-      </label>
+      <label for="quoteIdentifiers">Identifier Quoting in Autocomplete</label>
+      <select
+        id="quoteIdentifiers"
+        class="form-control"
+        :value="quoteIdentifiers"
+        @change="saveSetting('autocompleteQuoteIdentifiers', $event.target.value)"
+      >
+        <option value="auto">Only when required</option>
+        <option value="always">Whenever the name is not all-lowercase</option>
+      </select>
       <small class="help text-muted">
-        When enabled, table and column names that contain special characters or
-        reserved words are automatically wrapped in double quotes on autocomplete.
-        Disable this if you prefer to handle quoting manually.
+        Controls when a completed table or column name is wrapped in the dialect's quote
+        character. "Only when required" quotes reserved words and names with special
+        characters. The quote character itself comes from the database dialect.
       </small>
     </div>
   </div>
@@ -44,25 +46,20 @@ import { mapGetters } from 'vuex'
 export default Vue.extend({
   computed: {
     ...mapGetters({
-      autocompleteUppercaseKeywords: 'settings/autocompleteUppercaseKeywords',
-      autoQuoteIdentifiers: 'settings/autoQuoteIdentifiers',
+      userKeywordCase: 'settings/autocompleteKeywordCase',
+      userQuoteIdentifiers: 'settings/autocompleteQuoteIdentifiers',
     }),
+    // Fall back to the same defaults the editor applies when nothing is saved.
     keywordCase(): string {
-      return this.autocompleteUppercaseKeywords ? 'upper' : 'lower'
+      return this.userKeywordCase || 'preserve'
+    },
+    quoteIdentifiers(): string {
+      return this.userQuoteIdentifiers || 'auto'
     },
   },
   methods: {
-    async saveKeywordCase(value: string) {
-      await this.$store.dispatch('settings/save', {
-        key: 'autocompleteKeywordCase',
-        value,
-      })
-    },
-    async saveAutoQuote(value: boolean) {
-      await this.$store.dispatch('settings/save', {
-        key: 'autoQuoteIdentifiers',
-        value,
-      })
+    async saveSetting(key: string, value: string) {
+      await this.$store.dispatch('settings/save', { key, value })
     },
   },
 })
