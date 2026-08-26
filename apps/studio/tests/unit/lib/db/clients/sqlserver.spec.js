@@ -158,4 +158,38 @@ describe("SQL Server qualified-name handling for dotted table names (#3722)", ()
     )
     expect(sql).toBe("EXEC sp_rename '[dbo].[weird]]name]', 'new';")
   })
+
+  describe("listDatabases", () => {
+
+    // Reading sys.databases bare only lists every database when the session
+    // holds VIEW ANY DATABASE. From a non-master context a plain login sees
+    // almost nothing, which left the sidebar dropdown empty until the user
+    // detoured through master. HAS_DBACCESS answers the question we actually
+    // care about, and answers it the same way from any database context.
+    it("filters to databases the login can actually reach", async () => {
+      const client = makeClient()
+      await client.listDatabases()
+      const sql = client.driverExecuteSingle.mock.calls[0][0]
+      expect(sql).toContain('HAS_DBACCESS(name) = 1')
+    })
+
+    it("gives the optional filter a WHERE to hang off", async () => {
+      const client = makeClient()
+      await client.listDatabases({ only: ['alpha', 'beta'] })
+      const sql = client.driverExecuteSingle.mock.calls[0][0]
+
+      // The filter used to be glued on as a bare AND with no WHERE above it,
+      // which would have been a syntax error the moment anything passed one.
+      expect(sql).toMatch(/WHERE[\s\S]*AND/)
+      expect(sql).not.toMatch(/sys\.databases\s+AND/)
+      expect(sql).toContain("'alpha'")
+    })
+
+    it("omits the AND entirely when no filter is given", async () => {
+      const client = makeClient()
+      await client.listDatabases()
+      const sql = client.driverExecuteSingle.mock.calls[0][0]
+      expect(sql).not.toContain('AND')
+    })
+  })
 })

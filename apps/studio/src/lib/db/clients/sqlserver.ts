@@ -642,10 +642,20 @@ export class SQLServerClient extends BasicDatabaseClient<SQLServerResult, Transa
 
   async listDatabases(filter: DatabaseFilterOptions) {
     const databaseFilter = buildDatabaseFilter(filter, 'name', (s) => this.wrapIdentifier(s));
+    // HAS_DBACCESS answers the question we actually care about — can this login
+    // connect to this database — and answers it the same way from any database
+    // context. Reading sys.databases bare only lists everything when the session
+    // holds VIEW ANY DATABASE, which is why the list used to look empty until
+    // the user detoured through master.
+    //
+    // It also supplies the WHERE that the optional filter below appends to. The
+    // filter was previously glued on as a bare AND, which would have been a
+    // syntax error had anything ever passed one.
     const sql = `
       SELECT name
       FROM sys.databases
-      ${databaseFilter ? `AND ${databaseFilter}` : ''}
+      WHERE HAS_DBACCESS(name) = 1
+        ${databaseFilter ? `AND ${databaseFilter}` : ''}
       ORDER BY name
     `
 
