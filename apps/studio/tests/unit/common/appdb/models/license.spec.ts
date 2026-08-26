@@ -27,12 +27,13 @@ async function createLicense(options: {
   validUntil: string;
   supportUntil?: string;
   maxAllowedAppRelease: Nullable<{ tagName: string }>;
+  licenseType?: "PersonalLicense" | "TrialLicense";
 }) {
   await LicenseKey.clear();
   const license = new LicenseKey();
   license.validUntil = new Date(options.validUntil);
   license.supportUntil = new Date(options.supportUntil ?? options.validUntil);
-  license.licenseType = "PersonalLicense";
+  license.licenseType = options.licenseType ?? "PersonalLicense";
   license.email = "fake-email";
   license.key = "fake-key";
   license.maxAllowedAppRelease = options.maxAllowedAppRelease;
@@ -74,7 +75,13 @@ describe("License", () => {
     expect(isVersionLessThanOrEqual(v`1.1.99`, v`1.2.0-beta.1`)).toBe(true);
   });
 
-  describe("License status", () => {
+  /**
+   * This fork replaced upstream's tiered licensing with a flat "always ultimate"
+   * rule (see keysToStatus in LicenseKey.ts). These tests pin that contract, so
+   * a future upstream merge that quietly restores the tiered logic fails here
+   * instead of silently locking features away.
+   */
+  describe("License status - fork always reports ultimate", () => {
     const origParsedAppVersion = platformInfo.parsedAppVersion;
 
     beforeEach(async () => {
@@ -87,95 +94,52 @@ describe("License", () => {
       platformInfo.parsedAppVersion = origParsedAppVersion;
     });
 
-    it("Community - No license found", async () => {
-      expectStatus().toEqual({
-        edition: "community",
-        condition: ["No license found"],
-      });
-    });
-
-    it("Community - License expired", async () => {
-      currentTime("18-Sep-2024");
-      currentVersion(ANY_VERSION);
-
-      await createLicense({
-        validUntil: "17-Sep-2024",
-        supportUntil: "17-Sep-2024",
-        maxAllowedAppRelease: { tagName: ANY_VERSION_TAG },
-      });
-      expectStatus().toEqual({
-        edition: "community",
-        condition: ["Expired support date", "Expired valid date"],
-      });
-    });
-
-    it("Ultimate - No app version restriction", async () => {
-      currentTime("16-Sep-2024");
-      currentVersion(ANY_VERSION);
-      await createLicense({
-        validUntil: "17-Sep-2024",
-        maxAllowedAppRelease: null,
-      });
-      expectStatus().toEqual({
-        edition: "ultimate",
-        condition: ["No app version restriction"],
-      });
-    });
-
-    it("Ultimate - App version allowed", async () => {
-      currentTime("16-Sep-2024");
-      currentVersion("1.0.1");
-      await createLicense({
-        validUntil: "17-Sep-2024",
-        maxAllowedAppRelease: { tagName: "v1.0.1" },
-      });
+    it("reports ultimate when no license is present", async () => {
       await expectStatus().toEqual({
         edition: "ultimate",
         condition: ["App version allowed"],
       });
+    });
 
-      currentVersion("1.0.0");
-      expectStatus().toEqual({
+    it.each([
+      [
+        "an expired trial license",
+        { validUntil: "17-Sep-2024", maxAllowedAppRelease: { tagName: ANY_VERSION_TAG }, licenseType: "TrialLicense" as const },
+      ],
+      [
+        "a license past both its support and valid dates",
+        { validUntil: "17-Sep-2024", supportUntil: "17-Sep-2024", maxAllowedAppRelease: { tagName: ANY_VERSION_TAG } },
+      ],
+      [
+        "a license with no app version restriction",
+        { validUntil: "17-Sep-2024", maxAllowedAppRelease: null },
+      ],
+      [
+        "a lifetime license whose support window has ended",
+        { validUntil: "18-Sep-2024", supportUntil: "17-Sep-2024", maxAllowedAppRelease: { tagName: ANY_VERSION_TAG } },
+      ],
+      [
+        "a license that does not allow the current app version",
+        { validUntil: "18-Sep-2024", supportUntil: "17-Sep-2024", maxAllowedAppRelease: { tagName: EARLY_VERSION_TAG } },
+      ],
+    ])("reports ultimate given %s", async (_title, options) => {
+      currentTime("18-Sep-2024");
+      currentVersion(ANY_VERSION);
+      await createLicense(options);
+
+      await expectStatus().toEqual({
         edition: "ultimate",
         condition: ["App version allowed"],
       });
     });
+  });
 
-    it("Ultimate - Lifetime license, App version allowed, license expired", async () => {
-      currentTime("18-Sep-2024");
-      currentVersion(ANY_VERSION);
-      await createLicense({
-        validUntil: "18-Sep-2024",
-        supportUntil: "17-Sep-2024",
-        maxAllowedAppRelease: { tagName: ANY_VERSION_TAG },
-      });
-      expectStatus().toEqual({
-        edition: "ultimate",
-        condition: ["Expired support date", "App version allowed"],
-      });
-    })
-
-    it("Community - Lifetime license, App version not allowed, license expired", async () => {
-      currentTime("18-Sep-2024");
-      currentVersion(ANY_VERSION);
-      await createLicense({
-        validUntil: "18-Sep-2024",
-        supportUntil: "17-Sep-2024",
-        maxAllowedAppRelease: { tagName: EARLY_VERSION_TAG },
-      });
-      expectStatus().toEqual({
-        edition: "community",
-        condition: ["Expired support date", "App version not allowed"],
-      });
-    })
-
-    // Regression tests for version comparison
-    it("Should properly compare versions", async () => {
-      expect(isVersionLessThanOrEqual(parseVersion("v2.4.6"), parseVersion("v5.7.2"))).toBeTruthy();
-      expect(isVersionLessThanOrEqual(parseVersion("v2.5.1-beta.4"), parseVersion("v5.0.0"))).toBeTruthy();
-      expect(isVersionLessThanOrEqual(parseVersion("v6.3.7"), parseVersion("v4.2.1"))).not.toBeTruthy;
-      expect(isVersionLessThanOrEqual(parseVersion("v3.1.3-beta.4"), parseVersion("v1.8.1"))).not.toBeTruthy();
-      expect(isVersionLessThanOrEqual(parseVersion("v5.0.0"), parseVersion("v5.0.0"))).toBeTruthy();
-    })
+  // Regression tests for version comparison
+  it("Should properly compare versions", async () => {
+    expect(isVersionLessThanOrEqual(parseVersion("v2.4.6"), parseVersion("v5.7.2"))).toBeTruthy();
+    expect(isVersionLessThanOrEqual(parseVersion("v2.5.1-beta.4"), parseVersion("v5.0.0"))).toBeTruthy();
+    expect(isVersionLessThanOrEqual(parseVersion("v6.3.7"), parseVersion("v4.2.1"))).not.toBeTruthy();
+    expect(isVersionLessThanOrEqual(parseVersion("v3.1.3-beta.4"), parseVersion("v1.8.1"))).not.toBeTruthy();
+    expect(isVersionLessThanOrEqual(parseVersion("v5.0.0"), parseVersion("v5.0.0"))).toBeTruthy();
   });
 });

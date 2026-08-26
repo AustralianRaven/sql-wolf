@@ -1,6 +1,6 @@
 import { UserSetting } from "@/common/appdb/models/user_setting";
 import { IConnection } from "@/common/interfaces/IConnection";
-import { DatabaseFilterOptions, ExtendedTableColumn, FilterOptions, NgQueryResult, OrderBy, PrimaryKeyColumn, Routine, SchemaFilterOptions, StreamResults, SupportedFeatures, TableChanges, TableColumn, TableFilter, TableIndex, TableInsert, TableOrView, TablePartition, TableProperties, TableResult, TableTrigger, TableUpdateResult } from "@/lib/db/models";
+import { DatabaseFilterOptions, ExtendedTableColumn, FieldDescriptor, FieldEditData, FilterOptions, NgQueryResult, OrderBy, PrimaryKeyColumn, Routine, SchemaFilterOptions, StreamResults, SupportedFeatures, TableChanges, TableColumn, TableFilter, TableIndex, TableInsert, TableOrView, TablePartition, TableProperties, TableResult, TableTrigger, TableUpdateResult } from "@/lib/db/models";
 import { DatabaseElement, IDbConnectionServerConfig } from "@/lib/db/types";
 import { AlterPartitionsSpec, AlterTableSpec, CreateTableSpec, dialectFor, IndexAlterations, RelationAlterations, TableKey } from "@shared/lib/dialects/models";
 import { checkConnection, errorMessages, getDriverHandler, state } from "@/handlers/handlerState";
@@ -17,7 +17,7 @@ import { waitPromise } from "@/common/utils";
 export interface IConnectionHandlers {
   // Connection management from the store **************************************
   'conn/create': ({ config, auth, osUser, sId }: {config: IConnection, auth?: { input: string; mode: "pin" }, osUser: string, sId: string }) => Promise<void>,
-  'conn/test': ({ config, osUser, sId }: { config: IConnection, osUser: string, sId: string }) => Promise<void>,
+  'conn/test': ({ config, osUser, sId }: { config: IConnection, osUser: string, sId: string }) => Promise<string[]>,
   'conn/changeDatabase': ({ newDatabase, sId }: { newDatabase: string, sId: string }) => Promise<void>,
   'conn/clearConnection': ({ sId }: { sId: string}) => Promise<void>,
   'conn/getServerConfig': ({ sId }: { sId: string }) => Promise<IDbConnectionServerConfig>,
@@ -52,6 +52,7 @@ export interface IConnectionHandlers {
   'conn/listTablePartitions': ({ table, schema, sId }: { table: string, schema?: string, sId: string }) => Promise<TablePartition[]>,
   'conn/executeCommand': ({ commandText, sId }: { commandText: string, sId: string }) => Promise<NgQueryResult[]>,
   'conn/query': ({ queryText, options, tabId, hasActiveTransaction, sId }: { queryText: string, options?: any, tabId: number, hasActiveTransaction: boolean, sId: string }) => Promise<string>,
+  'conn/getResultEditData': ({ queryText, fields, sId }: { queryText: string, fields: FieldDescriptor[], sId: string }) => Promise<FieldEditData[]>,
   'conn/getCompletions': ({ cmd, sId }: { cmd: string, sId: string }) => Promise<string[]>,
   'conn/getShellPrompt': ({ sId }: { sId: string }) => Promise<string>,
   'conn/executeQuery': ({ queryText, options, sId }: { queryText: string, options: any, sId: string }) => Promise<NgQueryResult[]>,
@@ -69,7 +70,7 @@ export interface IConnectionHandlers {
   'conn/getTableCreateScript': ({ table, schema, sId }: { table: string, schema?: string, sId: string }) => Promise<string>,
   'conn/getViewCreateScript': ({ view, schema, sId }: { view: string, schema?: string, sId: string }) => Promise<string[]>,
   'conn/getMaterializedViewCreateScript': ({ view, schema, sId }: { view: string, schema?: string, sId: string }) => Promise<string[]>,
-  'conn/getRoutineCreateScript': ({ routine, type, schema, sId }: { routine: string, type: string, schema?: string, sId: string }) => Promise<string[]>,
+  'conn/getRoutineCreateScript': ({ routine, type, schema, id, sId }: { routine: string, type: string, schema?: string, id?: string, sId: string }) => Promise<string[]>,
   'conn/createTable': ({ table }: { table: CreateTableSpec }) => Promise<void>,
   'conn/getCollectionValidation': ({ collection, sId }: { collection: string, sId: string }) => Promise<any>,
   'conn/setCollectionValidation': ({ params, sId }: { params: any, sId: string }) => Promise<void>,
@@ -85,7 +86,7 @@ export interface IConnectionHandlers {
   'conn/alterPartitionSql': ({ changes, sId }: { changes: AlterPartitionsSpec, sId: string }) => Promise<string | null>,
   'conn/alterPartition': ({ changes, sId }: { changes: AlterPartitionsSpec, sId: string }) => Promise<void>,
   'conn/applyChangesSql': ({ changes, sId }: { changes: TableChanges, sId: string }) => Promise<string>,
-  'conn/applyChanges': ({ changes, sId }: { changes: TableChanges, sId: string }) => Promise<TableUpdateResult[]>,
+  'conn/applyChanges': ({ changes, tabId, sId }: { changes: TableChanges, tabId?: number, sId: string }) => Promise<TableUpdateResult[]>,
   'conn/setTableDescription': ({ table, description, schema, sId }: { table: string, description: string, schema?: string, sId: string }) => Promise<string>,
   'conn/setElementName': ({ elementName, newElementName, typeOfElement, schema, sId }: { elementName: string, newElementName: string, typeOfElement: DatabaseElement, schema?: string, sId: string }) => Promise<void>,
   'conn/dropElement': ({ elementName, typeOfElement, schema, sId }: { elementName: string, typeOfElement: DatabaseElement, schema?: string, sId: string }) => Promise<void>,
@@ -221,8 +222,10 @@ export const ConnHandlers: IConnectionHandlers = {
     state(sId).connectionAbortController = abortController;
     await server?.createConnection(config.defaultDatabase || undefined).connect(abortController.signal);
     abortController.abort();
+    const sshConfigWarnings = server.getServerConfig()?.sshConfigWarnings || [];
     server.disconnect();
     state(sId).connectionAbortController = null;
+    return sshConfigWarnings;
   },
 
   'conn/changeDatabase': async function({ newDatabase, sId }: { newDatabase: string, sId: string }) {
@@ -350,6 +353,11 @@ export const ConnHandlers: IConnectionHandlers = {
     return id;
   },
 
+  'conn/getResultEditData': async function({ queryText, fields, sId }: { queryText: string, fields: FieldDescriptor[], sId: string }) {
+    checkConnection(sId);
+    return await state(sId).connection.getResultEditData(queryText, fields);
+  },
+
   'conn/getCompletions': async function({ cmd, sId }: { cmd: string, sId: string }) {
     checkConnection(sId);
     return await state(sId).connection.getCompletions(cmd);
@@ -420,9 +428,9 @@ export const ConnHandlers: IConnectionHandlers = {
     return await state(sId).connection.getMaterializedViewCreateScript(view, schema);
   },
 
-  'conn/getRoutineCreateScript': async function({ routine, type, schema, sId }: { routine: string, type: string, schema?: string, sId: string }) {
+  'conn/getRoutineCreateScript': async function({ routine, type, schema, id, sId }: { routine: string, type: string, schema?: string, id?: string, sId: string }) {
     checkConnection(sId);
-    return await state(sId).connection.getRoutineCreateScript(routine, type, schema);
+    return await state(sId).connection.getRoutineCreateScript(routine, type, schema, id);
   },
 
   'conn/createTable': async function({ table, sId }: { table: CreateTableSpec, sId: string }) {
@@ -485,9 +493,9 @@ export const ConnHandlers: IConnectionHandlers = {
     return state(sId).connection.applyChangesSql(changes);
   },
 
-  'conn/applyChanges': async function({ changes, sId }: { changes: TableChanges, sId: string }) {
+  'conn/applyChanges': async function({ changes, tabId, sId }: { changes: TableChanges, tabId?: number, sId: string }) {
     checkConnection(sId);
-    return await state(sId).connection.applyChanges(changes);
+    return await state(sId).connection.applyChanges(changes, tabId);
   },
 
   'conn/setTableDescription': async function({ table, description, schema, sId }: { table: string, description: string, schema?: string, sId: string }) {
@@ -563,7 +571,7 @@ export const ConnHandlers: IConnectionHandlers = {
   'conn/azureGetAccountName': async function({ authId }: { authId: number }) {
     if (!authId) {
       throw new Error("authId is required");
-    };
+    }
     const cache = await TokenCache.findOneBy({id: authId})
     if (!cache) return null
     return cache.name
@@ -598,6 +606,7 @@ export const ConnHandlers: IConnectionHandlers = {
   'conn/releaseConnection': async function({ tabId, sId }: { tabId: number, sId: string }) {
     checkConnection(sId);
     await state(sId).connection.releaseConnection(tabId);
+    clearTransactionTimeout(sId, tabId);
   },
 
   'conn/startTransaction': async function({ tabId, sId }: { tabId: number, sId: string }) {
