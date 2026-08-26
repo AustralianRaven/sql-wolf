@@ -106,7 +106,6 @@ import { stringToTypedArray } from '@/common/utils'
     data() {
       return {
         tabulator: null,
-        actualTableHeight: '100%',
         selectedRowData: {},
         filterValue: '',
         selectedRowPosition: -1,
@@ -151,6 +150,7 @@ import { stringToTypedArray } from '@/common/utils'
         this.initializeTabulator()
       },
       tableHeight() {
+        if (!this.tabulator) return
         this.tabulator.setHeight(this.actualTableHeight)
       },
       focus() {
@@ -251,6 +251,20 @@ import { stringToTypedArray } from '@/common/utils'
         return [
           { event: AppEvent.switchedTab, handler: this.handleSwitchedTab },
         ]
+      },
+      /**
+       * Tabulator only virtualises when it has a definite height. "100%" gives
+       * it one just when the container already has a definite height of its own
+       * — true for a result panel sized by the splitter, false for a block that
+       * is sized by its own content. In the latter case the height resolves to
+       * auto and Tabulator renders every row, so a few thousand rows lock the
+       * renderer up.
+       *
+       * Every caller passes the pixel height it wants, so prefer it and keep
+       * "100%" only as the pre-measurement fallback.
+       */
+      actualTableHeight() {
+        return this.tableHeight > 0 ? `${this.tableHeight}px` : '100%'
       },
     },
     methods: {
