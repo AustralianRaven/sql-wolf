@@ -681,26 +681,57 @@ export class SQLServerClient extends BasicDatabaseClient<SQLServerResult, Transa
 
   async listDatabases(filter: DatabaseFilterOptions) {
     const databaseFilter = buildDatabaseFilter(filter, 'name', (s) => this.wrapIdentifier(s));
-    // HAS_DBACCESS answers the question we actually care about — can this login
-    // connect to this database — and answers it the same way from any database
-    // context. Reading sys.databases bare only lists everything when the session
-    // holds VIEW ANY DATABASE, which is why the list used to look empty until
-    // the user detoured through master.
-    //
-    // It also supplies the WHERE that the optional filter below appends to. The
-    // filter was previously glued on as a bare AND, which would have been a
-    // syntax error had anything ever passed one.
+    // The filter needs its own WHERE. It was previously appended as a bare AND
+    // with nothing above it, which would have been a syntax error the moment
+    // anything passed one.
     const sql = `
       SELECT name
       FROM sys.databases
-      WHERE HAS_DBACCESS(name) = 1
-        ${databaseFilter ? `AND ${databaseFilter}` : ''}
+      ${databaseFilter ? `WHERE ${databaseFilter}` : ''}
       ORDER BY name
     `
+
+    // Read the list from master. Inside a user database, sys.databases exposes
+    // only master and the current database unless the login holds VIEW ANY
+    // DATABASE — on Azure SQL that is the documented behaviour and no grant
+    // changes it. From master the whole server is visible, and Azure forbids
+    // USE across databases, so this needs its own connection rather than a
+    // context switch.
+    const fromMaster = await this.listDatabasesFromMaster(sql)
+    if (fromMaster) return fromMaster
 
     const { data } = await this.driverExecuteSingle(sql)
 
     return data.recordset.map((row) => row.name)
+  }
+
+  /**
+   * Runs the database listing against a short-lived master connection.
+   *
+   * Returns null when master is not worth trying or cannot be reached — already
+   * connected to master, integrated auth (whose pool is built differently, and
+   * which is on-prem where the current connection can see the list anyway), or
+   * any connection failure. The caller then falls back to the current
+   * connection, so a login without master access is no worse off than before.
+   */
+  private async listDatabasesFromMaster(sql: string): Promise<string[] | null> {
+    if (this.server?.config?.windowsAuthEnabled) return null
+    if (!this.dbConfig) return null
+    if ((this.dbConfig.database ?? '').toLowerCase() === 'master') return null
+
+    let pool: ConnectionPool | null = null
+    try {
+      pool = await new ConnectionPool({ ...this.dbConfig, database: 'master' }).connect()
+      const result = await pool.request().query(sql)
+      return result.recordset.map((row) => row.name)
+    } catch (ex) {
+      log.warn('Could not list databases from master, using the current connection:', ex?.message ?? ex)
+      return null
+    } finally {
+      if (pool) {
+        try { await pool.close() } catch { /* nothing useful to do */ }
+      }
+    }
   }
 
   createUpsertSQL({ schema, name: tableName }: DatabaseEntity, data: {[key: string]: any}, primaryKeys: string[]): string {

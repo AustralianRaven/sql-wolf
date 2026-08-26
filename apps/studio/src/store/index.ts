@@ -652,9 +652,17 @@ const store = new Vuex.Store<State>({
       }
     },
     async updateDatabaseList(context) {
-      const databaseList = await context.state.connection.listDatabases();
-      log.info("databaseList: ", databaseList)
-      context.commit('databaseList', databaseList)
+      try {
+        const databaseList = await context.state.connection.listDatabases();
+        log.info("databaseList: ", databaseList)
+        context.commit('databaseList', databaseList)
+      } catch (ex) {
+        // Committing an empty list here would be indistinguishable from a
+        // server that genuinely returned nothing, and the dropdown would just
+        // read "no matching options" with no hint that a query failed. Keep
+        // whatever was listed before and say why in the log instead.
+        log.error("Could not list databases: ", ex)
+      }
     },
     async updateNamespaceList(context) {
       // Just reuse listSchemas cause we don't use it and it's kinda comparable, may be a not great idea
