@@ -108,4 +108,34 @@ test.describe('Large result sets', () => {
 
     expect(renderedRows, 'the table should still render something').toBeGreaterThan(0);
   });
+
+  // Grow-to-fit is a stacked-layout behaviour. The tabbed layout deliberately
+  // fills the result panel whatever the row count, so this assertion would be
+  // wrong there.
+  test(`Given a handful of rows in the ${LAYOUT} layout, the table sizes to its content`, async () => {
+    test.skip(LAYOUT !== 'stacked', 'grow-to-fit only applies to the stacked layout');
+    await connectToSqlite();
+
+    await runQuery(`
+      DROP TABLE IF EXISTS few;
+      CREATE TABLE few AS
+      WITH RECURSIVE counter(x) AS (
+        SELECT 1 UNION ALL SELECT x + 1 FROM counter WHERE x < 3
+      )
+      SELECT x AS id, 'Row ' || x AS name FROM counter;
+    `);
+    await window.waitForTimeout(3000);
+
+    await runQuery('SELECT * FROM few;');
+    await expect(window.locator('.tabulator-row').first()).toBeVisible({ timeout: 60000 });
+    await window.waitForTimeout(2000);
+
+    const box = await window.locator('.tabulator').first().boundingBox();
+
+    // Grow-to-fit means three rows plus a header, nowhere near the 400px cap.
+    // A fixed height would pad this out with empty space instead.
+    expect(box.height, `three rows should not fill the cap (got ${box.height}px)`)
+      .toBeLessThan(250);
+    expect(box.height, 'the table should still be visible').toBeGreaterThan(40);
+  });
 });

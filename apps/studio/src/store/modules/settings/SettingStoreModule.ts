@@ -118,6 +118,13 @@ const SettingStoreModule: Module<State, any> = {
       const value = state.settings.queryResultsLayout?.value as string;
       return value === 'stacked' ? 'stacked' : 'tabs';
     },
+    // Pixel cap on each table in the stacked layout. Below the floor a table
+    // has no room for rows; above the ceiling stacking stops being useful.
+    stackedResultMaxHeight(state) {
+      const value = parseInt(String(state.settings.stackedResultMaxHeight?.value ?? ''), 10);
+      if (Number.isNaN(value)) return 400;
+      return Math.min(Math.max(value, 100), 2000);
+    },
     accentColor(state) {
       const value = state.settings.accentColor?.value as string;
       return value || null;

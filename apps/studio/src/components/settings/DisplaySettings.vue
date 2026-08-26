@@ -28,6 +28,35 @@
       </div>
     </div>
 
+    <div class="form-group" v-if="queryResultsLayout === 'stacked'">
+      <label for="stackedMaxHeight">Maximum Result Height</label>
+      <div class="max-height-row">
+        <input
+          id="stackedMaxHeight"
+          type="number"
+          class="form-control max-height-input"
+          min="100"
+          max="2000"
+          step="50"
+          :value="stackedResultMaxHeight"
+          @change="saveMaxHeight($event.target.value)"
+        />
+        <span class="unit">px</span>
+        <button
+          class="btn btn-flat reset-btn"
+          :disabled="stackedResultMaxHeight === defaultMaxHeight"
+          @click.prevent="saveMaxHeight(defaultMaxHeight)"
+        >
+          Reset
+        </button>
+      </div>
+      <small class="help text-muted">
+        Each stacked table grows to fit its rows and stops here, scrolling beyond
+        it. Small results stay small; large ones stay usable. Between 100 and
+        2000 pixels.
+      </small>
+    </div>
+
     <div class="setting-section-title">Accent Color</div>
 
     <div class="form-group">
@@ -81,6 +110,7 @@ export default Vue.extend({
   data() {
     return {
       pendingColor: null as string | null,
+      defaultMaxHeight: 400,
       colorPresets: [
         { label: 'Yellow (default)', hex: '#fad83b' },
         { label: 'Blue',   hex: '#5881D8' },
@@ -96,6 +126,7 @@ export default Vue.extend({
     ...mapGetters({
       queryResultsLayout: 'settings/queryResultsLayout',
       accentColor: 'settings/accentColor',
+      stackedResultMaxHeight: 'settings/stackedResultMaxHeight',
     }),
     accentColorValue(): string {
       return this.pendingColor ?? this.accentColor ?? THEME_DEFAULT
@@ -105,6 +136,18 @@ export default Vue.extend({
     async saveLayout(value: string) {
       await this.$store.dispatch('settings/save', {
         key: 'queryResultsLayout',
+        value,
+      })
+    },
+    async saveMaxHeight(raw: string | number) {
+      // Clamped here as well as in the getter, so a typed-in value is stored
+      // already corrected rather than being reinterpreted on every read.
+      const parsed = parseInt(String(raw), 10)
+      const value = Number.isNaN(parsed)
+        ? this.defaultMaxHeight
+        : Math.min(Math.max(parsed, 100), 2000)
+      await this.$store.dispatch('settings/save', {
+        key: 'stackedResultMaxHeight',
         value,
       })
     },
@@ -179,6 +222,21 @@ export default Vue.extend({
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.max-height-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.max-height-input {
+  width: 6rem;
+}
+
+.unit {
+  font-size: 0.8rem;
+  color: var(--text-dark);
 }
 
 .color-input {

@@ -355,7 +355,7 @@
               v-if="r.rows && r.rows.length > 0"
               :ref="'stackedTable_' + idx"
               :active="active"
-              :table-height="200"
+              :max-table-height="stackedResultMaxHeight"
               :result="r"
               :query="query"
               :tab="tab"
@@ -761,6 +761,7 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
         'userKeywordCase': 'settings/autocompleteKeywordCase',
         'userQuoteIdentifiers': 'settings/autocompleteQuoteIdentifiers',
         'queryResultsLayout': 'settings/queryResultsLayout',
+        'stackedResultMaxHeight': 'settings/stackedResultMaxHeight',
       }),
       ...mapState(['usedConfig', 'connectionType', 'database', 'tables', 'storeInitialized', 'connection']),
       ...mapState('data/queries', {'savedQueries': 'items'}),

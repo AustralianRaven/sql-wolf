@@ -125,6 +125,12 @@ import { stringToTypedArray } from '@/common/utils'
       editData: Map as PropType<Map<string, FieldEditData>>,
       editingData: Boolean,
       tableHeight: Number,
+      /**
+       * When set, the table grows to fit its rows and stops at this many pixels
+       * instead of using a fixed tableHeight. Used by the stacked results
+       * layout, where a fixed height wastes space on small results.
+       */
+      maxTableHeight: Number,
       query: Object,
       active: Boolean,
       tab: Object,
@@ -151,7 +157,16 @@ import { stringToTypedArray } from '@/common/utils'
       },
       tableHeight() {
         if (!this.tabulator) return
+        // Setting a height in grow-to-fit mode would override maxHeight and pin
+        // the table open again.
+        if (this.maxTableHeight > 0) return
         this.tabulator.setHeight(this.actualTableHeight)
+      },
+      maxTableHeight() {
+        // Switching sizing mode or cap needs a rebuild; Tabulator has no setter
+        // for maxHeight.
+        if (!this.tabulator) return
+        this.initializeTabulator()
       },
       focus() {
         if (!this.focus) return
@@ -266,6 +281,22 @@ import { stringToTypedArray } from '@/common/utils'
       actualTableHeight() {
         return this.tableHeight > 0 ? `${this.tableHeight}px` : '100%'
       },
+      /**
+       * Grow-to-fit mode. With maxTableHeight set, Tabulator sizes itself to its
+       * rows and stops at the cap, virtualising beyond it — so a four-row result
+       * is four rows tall and a five-thousand-row result is a scrollable block.
+       *
+       * height has to be null rather than undefined: the wrapper defaults it to
+       * "100%" and merges with lodash, which skips undefined sources. A set
+       * height also beats maxHeight in Tabulator, so leaving it would cap
+       * nothing.
+       */
+      sizingOptions() {
+        if (this.maxTableHeight > 0) {
+          return { height: null, maxHeight: this.maxTableHeight }
+        }
+        return { height: this.actualTableHeight }
+      },
     },
     methods: {
       initializeTabulator() {
@@ -282,7 +313,7 @@ import { stringToTypedArray } from '@/common/utils'
           persistenceID: this.tableId,
           data: this.tableData, //link data to table
           columns: this.tableColumns, //define table columns
-          height: this.actualTableHeight,
+          ...this.sizingOptions,
           downloadConfig: {
             columnHeaders: true
           },
