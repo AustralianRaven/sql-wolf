@@ -49,15 +49,21 @@ const configWatchers = {}
 // electron restart.
 const restartElectron = _.debounce(() => {
   if (electron) {
+    // Windows has no real signals, so this process exits with code 1 and a
+    // null signal — the same shape as a crash. Mark it so the exit handler
+    // can tell a deliberate restart from a real one.
+    electron.restarting = true
     process.kill(electron.pid, 'SIGINT')
   }
   // start electron again
-  electron = spawn(electronBin, ['.'], { stdio: 'inherit' })
-  electron.on('exit', (code, signal) => {
+  const child = spawn(electronBin, ['.'], { stdio: 'inherit' })
+  child.on('exit', (code, signal) => {
     console.log('electron exited', code, signal)
+    if (child.restarting) return
     if (!signal) process.exit()
   })
-  console.log('spawned electron, pid: ', electron.pid)
+  electron = child
+  console.log('spawned electron, pid: ', child.pid)
 
 }, 500)
 
