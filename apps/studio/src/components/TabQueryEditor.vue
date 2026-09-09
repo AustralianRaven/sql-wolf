@@ -502,7 +502,7 @@
       <modal
         class="vue-dialog beekeeper-modal"
         :name="`save-modal-${tab.id}`"
-        @closed="selectEditor"
+        @closed="onSaveModalClosed"
         @opened="selectTitleInput"
         height="auto"
         :scrollable="true"
@@ -536,7 +536,7 @@
               <div class="form-group" v-if="queryFolders && queryFolders.length > 0">
                 <label>Folder <i v-if="!isUltimate && !isCloud" class="material-icons menu-icon">stars</i></label>
                 <in-app-folder-picker
-                  v-model="query.queryFolderId"
+                  v-model="pickedFolderId"
                   :disabled="!isUltimate && !isCloud"
                   folder-path="data/queryFolders"
                 />
@@ -709,6 +709,9 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
         initialized: false,
         blankQuery: blankFavoriteQuery(),
         fullQuery: null,
+        // The folder chosen in the save modal. `undefined` means the user did
+        // not choose one, so the query keeps whatever folder the store holds.
+        pickedFolderId: undefined,
         dryRun: false,
         containerResizeObserver: null,
         onTextEditorBlur: null,
@@ -819,6 +822,12 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
       },
       query() {
         return this.fullQuery ?? this.blankQuery
+      },
+      /** The folder this query sits in right now, per the store. */
+      currentFolderId() {
+        if (!this.query?.id) return null
+        const latest = this.savedQueries.find((q) => q.id === this.query.id)
+        return (latest ?? this.query).queryFolderId ?? null
       },
       queryTitle() {
         return this.query?.title
@@ -1501,6 +1510,11 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
       selectEditor() {
         this.focusElement = 'text-editor'
       },
+      onSaveModalClosed() {
+        // Drop the pick so a later quick save does not reapply it.
+        this.pickedFolderId = undefined
+        this.selectEditor()
+      },
       selectTitleInput() {
         this.$refs.titleInput.select()
       },
@@ -1517,8 +1531,18 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
         if (this.query?.id) {
           this.saveQuery()
         } else {
-          this.$modal.show(`save-modal-${this.tab.id}`)
+          this.openSaveModal()
         }
+      },
+      openSaveModal() {
+        this.pickedFolderId = this.currentFolderId
+        this.$modal.show(`save-modal-${this.tab.id}`)
+      },
+      /** Opens the same move dialog the saved query sidebar uses. */
+      moveToFolder() {
+        const item = this.savedQueries.find((q) => q.id === this.query?.id)
+        if (!item) return
+        this.trigger(AppEvent.openMoveFileModal, { type: 'query', value: item })
       },
       async saveQuery() {
         if (this.remoteDeleted) return
@@ -1531,11 +1555,17 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
             payload.text = this.unsavedText
             payload.excerpt = payload.text.substr(0, 250)
             if (payload.id) {
+              // The tab can hold a stale folder and position if the sidebar
+              // moved this query, so the store wins by default.
               const latest = this.savedQueries.find(q => q.id === payload.id)
               if (latest) {
                 payload.queryFolderId = latest.queryFolderId
                 payload.position = latest.position
               }
+            }
+            // An explicit pick in the save modal outranks the store.
+            if (this.pickedFolderId !== undefined) {
+              payload.queryFolderId = this.pickedFolderId
             }
             this.$modal.hide(`save-modal-${this.tab.id}`)
             const id = await this.$store.dispatch('data/queries/save', payload)
@@ -2043,6 +2073,15 @@ import { KeybindingPath } from '@/common/bksConfig/BksConfigProvider'
           ...(this.query?.id
             ? [
                 divider,
+                ...(this.queryFolders && this.queryFolders.length > 0
+                  ? [
+                      {
+                        label: "Move to Folder…",
+                        id: "move-to-folder",
+                        handler: this.moveToFolder,
+                      },
+                    ]
+                  : []),
                 {
                   label: "View Edit History",
                   id: "view-edit-history",

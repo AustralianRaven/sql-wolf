@@ -30,7 +30,10 @@ export const UtilQueryModule: DataStore<TransportFavoriteQuery, State> = {
     folders: FolderFetchModule,
   },
   actions: {
-    ...utilActionsFor<TransportFavoriteQuery>('query', {}, {}, { text: true, title: true, database: true, excerpt: true, id: true }),
+    // queryFolderId and position must be selected here. A query tab loads its
+    // own record through findOne, and without them the tab cannot tell which
+    // folder it belongs to, so saving would file it at the root.
+    ...utilActionsFor<TransportFavoriteQuery>('query', {}, {}, { text: true, title: true, database: true, excerpt: true, id: true, queryFolderId: true, position: true }),
     ...accessGrantActions('queries'),
     ...treeActions<TransportFavoriteQuery>({ plural: 'queryFolderIds', singular: 'queryFolderId' }),
     async afterMutate(context, { type, data }) {
