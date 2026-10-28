@@ -103,6 +103,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import { mapGetters } from 'vuex'
+import { applyAccentColor } from '@/lib/theme/accentColor'
 
 const THEME_DEFAULT = '#fad83b'
 
@@ -154,7 +155,7 @@ export default Vue.extend({
     onColorInput(e: Event) {
       const value = (e.target as HTMLInputElement).value
       this.pendingColor = value
-      document.body.style.setProperty('--theme-primary', value)
+      applyAccentColor(document.body, value)
     },
     async onColorChange(e: Event) {
       const value = (e.target as HTMLInputElement).value
