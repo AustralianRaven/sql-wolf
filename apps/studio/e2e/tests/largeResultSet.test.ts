@@ -2,6 +2,7 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { launchElectron } from 'e2e/helpers/launchElectron';
 import { NewDatabaseConnection } from '../pageComponents/NewDatabaseConnection';
 import { QueryTab } from '../pageComponents/QueryTab';
+import { userActions } from '../pageActions/index';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -39,7 +40,9 @@ let connection: NewDatabaseConnection;
 let queryTab: QueryTab;
 
 async function connectToSqlite() {
-  await connection.newConnectionDropdown.selectOption('sqlite');
+  // Connecting to a missing file is an error; an empty file is an empty database.
+  if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, '');
+  await userActions(window).selectNewConnection('sqlite');
   await window.locator('#Database').fill(dbPath);
   await connection.connectButton.click();
   await expect(queryTab.queryTabTextArea).toBeVisible({ timeout: 30000 });

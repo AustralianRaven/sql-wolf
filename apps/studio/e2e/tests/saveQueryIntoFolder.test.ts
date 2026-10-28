@@ -3,6 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { userActions } from '../pageActions/index';
 
 /** TEST_MODE points userDirectory at ./tmp, so the app db is isolated. */
 const APP_DB = path.resolve('tmp/app.db');
@@ -29,7 +30,9 @@ async function launch(): Promise<{ app: ElectronApplication; win: Page }> {
 }
 
 async function connectSqlite(win: Page, dbFile: string) {
-  await win.getByLabel('Connection Type').selectOption('sqlite');
+  // Connecting to a missing file is an error; an empty file is an empty database.
+  if (!fs.existsSync(dbFile)) fs.writeFileSync(dbFile, '');
+  await userActions(win).selectNewConnection('sqlite');
   await win.locator('#Database').fill(dbFile);
   await win.getByRole('button', { name: 'Connect' }).click();
   // `.tab-pane` also matches the sidebar panes, so anchor on the tab ids.
@@ -51,7 +54,7 @@ async function saveNewQuery(win: Page, title: string, folderName?: string) {
     await expect(picker, 'the folder picker is enabled').toBeEnabled();
     await picker.click();
 
-    const slideover = win.locator('.folder-slideover');
+    const slideover = win.locator('.slideover');
     await expect(slideover, 'the folder slideover opens').toBeVisible({ timeout: 5000 });
     await slideover.getByText(folderName, { exact: true }).click();
     await slideover.getByRole('button', { name: 'Select' }).click();
@@ -104,8 +107,16 @@ test('Given a query already saved at the root, When Move to Folder is used from 
   await expect(recent, 'the recent connection is listed').toBeVisible({ timeout: 15000 });
   await recent.dblclick();
 
-  editor = win.locator('#tab-0').getByRole('textbox');
-  await expect(editor, 'the saved query tab is restored').toBeVisible({ timeout: 30000 });
+  // A never-saved connection does not restore its tabs (upstream's
+  // connection-scoped tabs), so open the query from the Saved Queries panel.
+  await win.locator('.global-items a[title="Saved Queries"]').click();
+  const savedItem = win.locator('.list-item-btn').filter({ hasText: 'HomelessQuery' }).first();
+  await expect(savedItem, 'the saved query is listed').toBeVisible({ timeout: 15000 });
+  // The list re-renders as the query opens, which makes a real dblclick retry.
+  await savedItem.dispatchEvent('dblclick');
+
+  editor = win.locator('[id^="tab-"].tab-pane.active .cm-content');
+  await expect(editor, 'the saved query opens in the editor').toContainText('needs_a_home', { timeout: 30000 });
 
   // --- When: the editor context menu files it
   await editor.click({ button: 'right' });

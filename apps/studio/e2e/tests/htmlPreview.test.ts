@@ -2,6 +2,8 @@ import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import { launchElectron } from 'e2e/helpers/launchElectron';
 import { NewDatabaseConnection } from '../pageComponents/NewDatabaseConnection';
 import { QueryTab } from '../pageComponents/QueryTab';
+import { userActions } from '../pageActions/index';
+import { DatabaseSync } from 'node:sqlite';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -38,6 +40,8 @@ test.describe('Open as HTML', () => {
     for (const suffix of ['', '-wal', '-shm']) {
       fs.rmSync(dbPath + suffix, { force: true });
     }
+    // Connecting to a missing file is an error now, so make an empty database.
+    new DatabaseSync(dbPath).close();
   });
 
   test.beforeEach(async () => {
@@ -46,7 +50,7 @@ test.describe('Open as HTML', () => {
     connection = new NewDatabaseConnection(win);
     queryTab = new QueryTab(win);
 
-    await connection.newConnectionDropdown.selectOption('sqlite');
+    await userActions(win).selectNewConnection('sqlite');
     await win.locator('#Database').fill(dbPath);
     await connection.connectButton.click();
     await expect(queryTab.queryTabTextArea, 'Then the query editor is visible after connecting')
