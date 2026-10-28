@@ -1,6 +1,6 @@
 import { BeeCursor, TableColumn } from "../../models";
 import rawLog from '@bksLogger';
-import { BigQuery, GetRowsOptions, Job, QueryResultsOptions, RowMetadata } from "@google-cloud/bigquery";
+import type { BigQuery, GetRowsOptions, Job, QueryResultsOptions, RowMetadata } from "@google-cloud/bigquery";
 import { waitFor } from "../base/wait";
 
 const log = rawLog.scope('bigquerycursor');

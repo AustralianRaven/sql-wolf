@@ -1,4 +1,6 @@
-import * as bq from '@google-cloud/bigquery';
+// Type-only: the BigQuery SDK is slow to load and the utility process imports
+// every client at boot. connect() requires it on first use.
+import type * as bq from '@google-cloud/bigquery';
 import { TableKey } from "@shared/lib/dialects/models";
 import { ChangeBuilderBase } from "@shared/lib/sql/change_builder/ChangeBuilderBase";
 import { SupportedFeatures, FilterOptions, TableOrView, Routine, TableColumn, ExtendedTableColumn, TableTrigger, TableIndex, SchemaFilterOptions, CancelableQuery, NgQueryResult, DatabaseFilterOptions, TableChanges, TableProperties, PrimaryKeyColumn, OrderBy, TableFilter, TableResult, StreamResults, TableInsert, TableUpdate, TableDelete, BksField } from "../models";
@@ -116,7 +118,9 @@ export class BigQueryClient extends BasicDatabaseClient<BigQueryResult> {
     });
 
 
-    this.client = new bq.BigQuery(this.config);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { BigQuery } = require('@google-cloud/bigquery') as typeof bq;
+    this.client = new BigQuery(this.config);
   }
 
   async disconnect(): Promise<void> {

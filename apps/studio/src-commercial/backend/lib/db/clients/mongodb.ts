@@ -7,8 +7,10 @@ import { BksField, BksFieldType, CancelableQuery, ExtendedTableColumn, NgQueryRe
 import { CreateTableSpec, IndexAlterations, TableKey } from "@/shared/lib/dialects/models";
 import _ from 'lodash';
 import { MongoDBObjectIdTranscoder } from "@/lib/db/serialization/transcoders";
-import { ElectronRuntime as MongoRuntime } from '@mongosh/browser-runtime-electron';
-import { NodeDriverServiceProvider } from '@mongosh/service-provider-node-driver';
+// Type-only: mongosh adds ~half a second to utility-process startup, and the
+// utility imports every client at boot. connect() requires it on first use.
+import type { ElectronRuntime as MongoRuntime } from '@mongosh/browser-runtime-electron';
+import type { NodeDriverServiceProvider as NodeDriverServiceProviderType } from '@mongosh/service-provider-node-driver';
 import { createCancelablePromise } from "@/common/utils";
 import { errors } from "@/lib/errors";
 import EventEmitter from "events";
@@ -148,9 +150,13 @@ export class MongoDBClient extends BasicDatabaseClient<QueryResult> {
     // pre connect to pool
     await this.conn.connect();
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ElectronRuntime } = require('@mongosh/browser-runtime-electron') as { ElectronRuntime: typeof MongoRuntime };
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { NodeDriverServiceProvider } = require('@mongosh/service-provider-node-driver') as { NodeDriverServiceProvider: typeof NodeDriverServiceProviderType };
     // @ts-ignore
     const service = new NodeDriverServiceProvider(this.conn, new EventEmitter(), { productDocsLink: '', productName: 'BeekeeperStudio' });
-    this.runtime = new MongoRuntime(service);
+    this.runtime = new ElectronRuntime(service);
     this.runtime.evaluate(`use ${this.db}`)
 
     this.queryLeaf = new QueryLeaf(this.conn, this.db);

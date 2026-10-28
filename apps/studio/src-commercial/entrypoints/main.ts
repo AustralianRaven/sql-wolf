@@ -44,11 +44,14 @@ function initUserDirectory(d: string) {
 }
 
 let utilityProcess: Electron.UtilityProcess
+// Resolves once the utility process has posted 'ready'. Callers that arrive
+// while it is still booting wait on this instead of returning early.
+let utilityReady: Promise<void> | null = null
 let newWindows: number[] = [];
 
-async function createUtilityProcess() {
-  if (utilityProcess) {
-    return;
+function createUtilityProcess(): Promise<void> {
+  if (utilityProcess && utilityReady) {
+    return utilityReady;
   }
 
   const args = {
@@ -73,6 +76,7 @@ async function createUtilityProcess() {
     if (code) {
       log.info('Utility process died, restarting')
       utilityProcess = null;
+      utilityReady = null;
       await createUtilityProcess();
       createAndSendPorts(false, true);
     }
@@ -85,13 +89,17 @@ async function createUtilityProcess() {
   })
 
   utilityProcess.postMessage({ type: 'init' });
-  return new Promise<void>((resolve, _reject) => {
-    utilityProcess.on('message', (msg: UtilProcMessage) => {
+  const proc = utilityProcess
+  utilityReady = new Promise<void>((resolve, _reject) => {
+    proc.on('message', (msg: UtilProcMessage) => {
       if (msg.type === 'ready') {
         resolve()
       }
     })
+    // Dying before 'ready' must not strand waiters; they re-check and respawn.
+    proc.once('exit', () => resolve())
   })
+  return utilityReady
 }
 
 
@@ -232,7 +240,11 @@ app.on('ready', async () => {
       const settings = await initBasics()
       initializeSecurity(app);
       initializeFileHelpers();
-      await createUtilityProcess()
+      // Boot the utility process alongside the window rather than before it.
+      // Loading the utility bundle takes seconds; the renderer queues its
+      // requests until 'requestPorts' (below) hands it a port, which waits
+      // for the utility to be ready.
+      createUtilityProcess()
 
       await buildWindow(settings)
     }
@@ -261,11 +273,20 @@ function createAndSendPorts(filter: boolean, utilDied = false) {
 
 ipcMain.handle('requestPorts', async () => {
   log.info('Client requested ports');
+  // pid is undefined until the child spawns, so let a booting process finish
+  // before deciding it is dead. Loop because a crash mid-boot swaps in a
+  // fresh process (and promise) via the exit handler.
+  while (utilityReady) {
+    const pending = utilityReady
+    await pending
+    if (pending === utilityReady) break
+  }
   if (!utilityProcess || !utilityProcess.pid) {
     log.info('NO UTIL PROCESS')
     utilityProcess = null;
-    await createUtilityProcess();
+    utilityReady = null;
   }
+  await createUtilityProcess();
 
   if (newWindows.length > 0) {
     createAndSendPorts(true);
