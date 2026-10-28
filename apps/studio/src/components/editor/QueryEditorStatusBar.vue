@@ -90,7 +90,7 @@
     </x-button>
     <x-buttons v-if="canEdit && editing && changesCount > 0" class="pending-changes">
       <x-button
-        class="btn btn-primary btn-badge btn-icon"
+        class="btn btn-primary btn-badge"
         @click.prevent="saveChanges"
         v-tooltip="`Apply ${changesString}`"
       >
@@ -117,13 +117,21 @@
         </x-menu>
       </x-button>
     </x-buttons>
+    <visualize-button
+      menu-id="results.statusbar"
+      :header="visualizeHeader"
+      :disabled="rowCount === 0"
+      :conditions="{ explainResult }"
+      @select="(item, event) => $emit('visualize', item, event)"
+    />
     <span
       v-tooltip="editButtonTooltip"
+      class="inline-flex"
     >
       <x-button
         v-if="canEdit && !editing"
         :disabled="results?.length === 0 || !resultEditable || usedConfig.readOnlyMode"
-        class="btn btn-flat btn-icon"
+        class="btn btn-flat"
         id="edit-data-btn"
         @click.prevent="editResults"
       >
@@ -140,7 +148,7 @@
     </x-button>
     <x-button
       v-if="layout !== 'stacked'"
-      class="btn btn-flat btn-icon end"
+      class="btn btn-flat end"
       :disabled="results?.length === 0"
       menu
     >
@@ -231,6 +239,7 @@
 <script>
 import humanizeDuration from 'humanize-duration';
 import Statusbar from '../common/StatusBar.vue';
+import VisualizeButton from '../plugins/VisualizeButton.vue';
 import { mapState, mapGetters } from 'vuex';
 import { AppEvent } from '@/common/AppEvent';
 import formatSeconds from "@/lib/time/formatSeconds";
@@ -252,8 +261,8 @@ const shortEnglishHumanizer = humanizeDuration.humanizer({
 });
 
 export default {
-  props: ['results', 'running', 'value', 'executeTime', 'wrapText', 'active', 'elapsedTime', 'editing', 'changesCount', 'changesString', 'resultEditable', 'layout'],
-  components: { Statusbar },
+  props: ['results', 'running', 'value', 'executeTime', 'wrapText', 'active', 'elapsedTime', 'editing', 'changesCount', 'changesString', 'resultEditable', 'selectedCells', 'explainResult', 'layout'],
+  components: { Statusbar, VisualizeButton },
   data() {
     return {
       showHint: false,
@@ -310,6 +319,12 @@ export default {
     },
     rowCount() {
       return this.result && this.result.rows ? this.result.rows.length : 0
+    },
+    visualizeHeader() {
+      if (this.selectedCells > 0) {
+        return `Open ${this.$pluralize('cell', this.selectedCells, true)} in`
+      }
+      return `Open ${this.rowCount} ${this.$pluralize('row', this.rowCount, false)} in`
     },
     result() {
       return this.results[this.value]

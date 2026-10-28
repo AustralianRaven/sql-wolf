@@ -28,3 +28,10 @@ apps/studio/test-results
 *.orig
 surreal_data/
 devReadmes/
+todo.txt
+done.txt
+local.config.ini
+
+# Python bytecode (mkdocs hooks in bin/mkdocs_hooks)
+__pycache__/
+*.pyc

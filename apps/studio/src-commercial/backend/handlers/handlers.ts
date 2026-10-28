@@ -3,6 +3,7 @@ import { IGeneratorHandlers } from "@/handlers/generatorHandlers";
 import { IQueryHandlers } from "@/handlers/queryHandlers";
 import { ITempHandlers } from "@/handlers/tempHandlers";
 import { IVaultHandlers } from "@/handlers/vaultHandlers";
+import { IConfigHandlers } from "@/handlers/configHandlers";
 
 // commercial
 import { IConnectionHandlers } from "./connHandlers";
@@ -27,4 +28,6 @@ export interface Handlers
     ITempHandlers,
     IAwsHandlers,
     IWorkspaceHandlers,
-    IVaultHandlers {}
+    IConfigHandlers,
+    IVaultHandlers
+    {}
