@@ -340,7 +340,7 @@ import { normalizeFilters, safeSqlFormat, createTableFilter, isNumericDataType, 
 import { TableFilter } from '@/lib/db/models';
 import { LanguageData } from '../../lib/editor/languageData'
 import { escapeHtml, FormatterParams } from '@shared/lib/tabulator';
-import { copyRanges, pasteRange, readClipboardRows, copyActionsMenu, pasteActionsMenu, commonColumnMenu, createMenuItem, resizeAllColumnsToFixedWidth, resizeAllColumnsToFitContent, resizeAllColumnsToFitContentAction } from '@/lib/menu/tableMenu';
+import { copyRanges, pasteRange, readClipboardRows, copyActionsMenu, pasteActionsMenu, commonColumnMenu, createMenuItem, resizeAllColumnsToFixedWidth, resizeAllColumnsToFitContent, resizeAllColumnsToFitContentAction, openHtmlPreviewMenuItem } from '@/lib/menu/tableMenu';
 import { tabulatorForTableData } from "@/common/tabulator";
 import { TransportTabulatorPersistence } from "@/common/transport/TransportTabulatorPersistence";
 import { getFilters, setFilters } from "@/common/transport/TransportOpenTab"
@@ -864,6 +864,7 @@ export default Vue.extend({
           const range = _.last(ranges)
           const menu = [
             this.openEditorMenu(cell),
+            openHtmlPreviewMenuItem(cell, (tab) => this.trigger(AppEvent.newCustomTab, tab)),
             this.setAsNullMenuItem(ranges),
             { separator: true },
             this.quickFilterMenuItem(cell),

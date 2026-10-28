@@ -67,7 +67,7 @@
   import { markdownTable } from 'markdown-table'
   import intervalParse from 'postgres-interval'
   import * as td from 'tinyduration'
-  import { copyRanges, copyActionsMenu, commonColumnMenu, resizeAllColumnsToFitContent, resizeAllColumnsToFixedWidth, createMenuItem, pasteRange } from '@/lib/menu/tableMenu';
+  import { copyRanges, copyActionsMenu, commonColumnMenu, resizeAllColumnsToFitContent, resizeAllColumnsToFixedWidth, createMenuItem, pasteRange, openHtmlPreviewMenuItem } from '@/lib/menu/tableMenu';
   import { tabulatorForTableData } from '@/common/tabulator';
   import EditorModal from '../tableview/EditorModal.vue'
   import { AppEvent } from "@/common/AppEvent";
@@ -450,6 +450,7 @@ import { stringToTypedArray } from '@/common/utils'
 
           return [
             this.openEditorMenu(cell),
+            openHtmlPreviewMenuItem(cell, (tab) => this.trigger(AppEvent.newCustomTab, tab)),
             this.setAsNullMenuItem(ranges),
             { separator: true },
             ...copyActionsMenu({

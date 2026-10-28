@@ -104,6 +104,24 @@ export const commonColumnMenu = [
   resizeAllColumnsToFixedWidth,
 ];
 
+/** Opens the cell's text in an html-preview tab: raw source left, rendered page right. */
+export function openHtmlPreviewMenuItem(cell: CellComponent, open: (tab: { tabType: 'html-preview', title: string, unsavedQueryText: string, unsavedChanges: boolean }) => void) {
+  const value = cell.getValue();
+  const column = cell.getColumn().getDefinition();
+  return {
+    label: createMenuItem("Open as HTML"),
+    disabled: typeof value !== "string" || value.trim() === "",
+    action: () => {
+      open({
+        tabType: 'html-preview',
+        title: `HTML: ${column.title || cell.getField()}`,
+        unsavedQueryText: value,
+        unsavedChanges: false,
+      });
+    },
+  };
+}
+
 export function createMenuItem(label: string, shortcut: string | string[] = "", ultimate = false) {
   label = `<x-label>${escapeHtml(label)}</x-label>`;
   if (typeof shortcut !== "string") {

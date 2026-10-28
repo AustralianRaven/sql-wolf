@@ -1,4 +1,4 @@
-import { copyRanges } from "@/lib/menu/tableMenu";
+import { copyRanges, openHtmlPreviewMenuItem } from "@/lib/menu/tableMenu";
 import { PostgresData } from "@/shared/lib/dialects/postgresql";
 import { MysqlData } from "@/shared/lib/dialects/mysql";
 import { SqlServerData } from "@/shared/lib/dialects/sqlserver";
@@ -189,5 +189,47 @@ describe("copyRanges - asIn type", () => {
       const callArg = (ElectronPlugin.clipboard.writeText as jest.Mock).mock.calls[0][0];
       expect(callArg).toContain("null");
     });
+  });
+});
+describe("openHtmlPreviewMenuItem", () => {
+  function createMockCell(value: any, title = "HtmlContent") {
+    return {
+      getValue: jest.fn(() => value),
+      getField: jest.fn(() => "htmlcontent"),
+      getColumn: jest.fn(() => ({ getDefinition: () => ({ title }) })),
+    } as any;
+  }
+
+  it.each([
+    ["null", null],
+    ["a number", 42],
+    ["an empty string", ""],
+    ["whitespace only", "   "],
+    ["binary data", new Uint8Array([60, 112, 62])],
+  ])("Given a cell holding %s, the item is disabled", (_name, value) => {
+    const item = openHtmlPreviewMenuItem(createMockCell(value), jest.fn());
+    expect(item.disabled).toBe(true);
+  });
+
+  it("Given a cell holding HTML, when the item is clicked, then an html-preview tab opens with the raw HTML", () => {
+    const open = jest.fn();
+    const html = "<p>Hello <b>Kat</b></p>";
+    const item = openHtmlPreviewMenuItem(createMockCell(html), open);
+    expect(item.disabled).toBe(false);
+
+    item.action();
+
+    expect(open).toHaveBeenCalledWith({
+      tabType: "html-preview",
+      title: "HTML: HtmlContent",
+      unsavedQueryText: html,
+      unsavedChanges: false,
+    });
+  });
+
+  it("Given a column without a title, the tab title falls back to the field name", () => {
+    const open = jest.fn();
+    openHtmlPreviewMenuItem(createMockCell("<p/>", ""), open).action();
+    expect(open.mock.calls[0][0].title).toBe("HTML: htmlcontent");
   });
 });

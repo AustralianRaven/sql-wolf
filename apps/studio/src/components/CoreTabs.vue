@@ -93,6 +93,12 @@
           :tab="tab"
           :tab-id="tab.id"
         />
+        <TabHtmlPreview
+          v-if="tab.tabType === 'html-preview'"
+          :tab="tab"
+          :active="activeTab?.id === tab.id"
+          @update-tab="updateTab"
+        />
         <PluginBase
           v-if="tab.tabType === 'plugin-base'"
           :tab="tab"
@@ -326,6 +332,7 @@ import ConfirmationModal from './common/modals/ConfirmationModal.vue'
 import CreateCollectionModal from './common/modals/CreateCollectionModal.vue'
 import SqlFilesImportModal from '@/components/common/modals/SqlFilesImportModal.vue'
 import Shell from './TabShell.vue'
+import TabHtmlPreview from './TabHtmlPreview.vue'
 
 import { safeSqlFormat as safeFormat } from '@/common/utils';
 import { TabTypeConfig, TransportOpenTab, TransportPluginTab, setFilters, matches, duplicate } from '@/common/transport/TransportOpenTab'
@@ -352,6 +359,7 @@ export default Vue.extend({
     SqlFilesImportModal,
     CreateCollectionModal,
     Shell,
+    TabHtmlPreview,
     PluginShell,
     PluginBase,
   },

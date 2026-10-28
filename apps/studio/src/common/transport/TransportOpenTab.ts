@@ -6,7 +6,7 @@ import { JsonValue } from "@/types";
 import { LoadViewParams } from "@beekeeperstudio/plugin";
 
 export type PluginTabType = 'plugin-base' | 'plugin-shell';
-export type CoreTabType = 'query' | 'table' | 'table-properties' | 'settings' | 'table-builder' | 'backup' | 'import-export-database' | 'restore' | 'import-table' | 'shell'
+export type CoreTabType = 'query' | 'table' | 'table-properties' | 'settings' | 'table-builder' | 'backup' | 'import-export-database' | 'restore' | 'import-table' | 'shell' | 'html-preview'
 export type TabType = CoreTabType | PluginTabType
 
 const pickable = ['title', 'tabType', 'unsavedChanges', 'unsavedQueryText', 'tableName', 'schemaName', 'context']
